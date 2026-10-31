@@ -4,13 +4,17 @@ App personal (PWA) para cumplir cada día: hábitos diarios, semanales y mensual
 
 Es una sola página estática (`index.html`), sin servidor ni registro.
 
+## Dónde está publicada
+
+https://rayanelhabil2-arch.github.io/Discipline/ (GitHub Pages, rama `gh-pages`). Cada cambio se sube a `main` y a `gh-pages`; la web se actualiza en un minuto más o menos.
+
 ## Datos
 
 Todo se guarda en el navegador del móvil (`localStorage`, clave `panelVida.v1`). Para pasar los datos a otro móvil: **Metas → Copia de seguridad → Exportar** y luego **Importar** en el otro.
 
 ## Instalar en el móvil
 
-1. Abre la dirección de Vercel en Safari.
+1. Abre https://rayanelhabil2-arch.github.io/Discipline/ en Safari.
 2. Compartir → **Añadir a pantalla de inicio** → activa «Abrir como app web».
 
 ## Archivos
