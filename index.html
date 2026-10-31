@@ -141,6 +141,10 @@ svg text{font-family:Inter}
   <h1 id="greet">Rayan.</h1>
   <div class="sub">Este día no volverá.</div>
 
+  <div class="card" id="notifBanner" style="display:none;border-color:var(--red)">
+    <div class="row between"><div><b>🔔 Notificaciones del sargento</b><div class="small" id="notifBTxt">Frases para empujarte a las 8, 15, 18, 21 y 23 h.</div></div><button class="btn red sm" data-a="notifOn">Activar</button></div>
+  </div>
+
   <div class="card sarge">
     <div class="who">⚔ El sargento dice</div>
     <div class="big" id="sargeTxt"></div>
@@ -298,6 +302,10 @@ svg text{font-family:Inter}
   <div class="card"><div class="hd"><h2>Ahorro</h2><span class="small" id="savTot"></span></div><div id="savings"></div></div>
   <div class="card"><div class="hd"><h2>Logros</h2><button class="lnk" data-a="addGoal">+ Nueva</button></div><div id="goals"></div></div>
   <div class="card"><div class="hd"><h2>Notas</h2></div><textarea id="notes" rows="5" placeholder="Ideas, pendientes, lo que sea…"></textarea></div>
+  <div class="card"><div class="hd"><h2>Notificaciones</h2><span class="small" id="notifState"></span></div>
+    <p class="hint">El sargento te manda una frase a las 8:00, 15:00, 18:00, 21:00 y 23:00, aunque tengas la app cerrada.</p>
+    <div class="row wrapf"><button class="btn sm red" data-a="notifOn">Activar notificaciones</button></div>
+  </div>
   <div class="card"><div class="hd"><h2>Copia de seguridad</h2></div>
     <p class="hint">Para pasar tus datos a otro móvil o a otra versión de la app.</p>
     <div class="row wrapf"><button class="btn sm" data-a="exportData">Exportar mis datos</button><button class="btn sm" data-a="importData">Importar datos</button></div>
@@ -745,6 +753,7 @@ document.addEventListener("click",e=>{
     case "editGoal": goalSheet(S.goals.find(x=>x.id===b.dataset.id)); break;
     case "addGoal": goalSheet(null); break;
     case "exportData": exportSheet(); break;
+    case "notifOn": enableNotif(); break;
     case "importData": importSheet(); break;
   }
 });
@@ -916,6 +925,38 @@ function importSheet(){
   wire(()=>{try{const x=JSON.parse($("imT").value.trim());if(!x||typeof x!=="object"||!x.habits)throw 0;S=merge(x);save();closeSheet();renderAll();toast("Datos importados ✓");}catch(e){toast("Ese texto no es válido");}});
 }
 
+// ================= NOTIFICACIONES PUSH =================
+const SB_URL="https://dffavtchgwwrepunyids.supabase.co";
+const SB_KEY="sb_publishable_07Pc-ZT16chbdMX_pCzvKg_v_VIiL2z";
+const VAPID="BFZBT_P9GIrgz9hdCV8XVTuI7oQl-Vz97tngwzNCkVOuC8Wuw8CfwSTpFDiPXhfx07Bzgqr_nhT6QJKgSb58kh0";
+const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const pushOK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+function b64u(s){const p="=".repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...b].map(c=>c.charCodeAt(0)));}
+function notifStatus(){
+  let st,banner=false,txt="";
+  if(!pushOK()){st=isStandalone()?"no disponible":"abre desde el icono";banner=!isStandalone();txt="Primero añade la app a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) y ábrela desde el icono.";}
+  else if(Notification.permission==="granted"&&S.notifOn){st="activadas ✓";}
+  else if(Notification.permission==="denied"){st="bloqueadas";txt="Las bloqueaste. Actívalas en Ajustes → Notificaciones → Disciplina.";banner=true;}
+  else {st="desactivadas";banner=true;}
+  $("notifState").textContent=st;
+  $("notifBanner").style.display=banner&&!S.notifHide?"block":"none";
+  if(txt)$("notifBTxt").textContent=txt;
+}
+async function enableNotif(){
+  if(!pushOK()){toast(isStandalone()?"Este móvil no admite notificaciones web (necesitas iOS 16.4 o más)":"Añádela a la pantalla de inicio y ábrela desde el icono");return;}
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=="granted"){toast("Sin permiso no te puedo avisar");notifStatus();return;}
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID)});
+    const j=sub.toJSON();
+    const r=await fetch(SB_URL+"/rest/v1/disciplina_push_subs",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth})});
+    if(!r.ok&&r.status!==409) throw new Error("server "+r.status);
+    S.notifOn=true;save();notifStatus();toast("🔔 Activadas. El sargento te escribirá.");
+  }catch(e){toast("No se pudieron activar: "+(e.message||e));}
+}
+
 // ================= TEMPORIZADOR =================
 const PRE=[["25 min",25,"f"],["50 min",50,"f"],["90 min",90,"f"],["Pausa 5",5,"p"],["Pausa 15",15,"p"]];
 let fp=0,fLen=1500,fLeft=1500,fEnd=null,fTick=null,actx=null;
@@ -934,7 +975,7 @@ $("freset").onclick=()=>{clearInterval(fTick);fEnd=null;fLeft=fLen;drawClock();}
 
 // ================= NAV =================
 $("tabs").onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+b.dataset.v));window.scrollTo(0,0);};
-function renderAll(){renderHoy();renderObj();renderEst();renderGym();renderMot();renderMet();renderPresets();drawClock();}
+function renderAll(){try{notifStatus();}catch(e){}renderHoy();renderObj();renderEst();renderGym();renderMot();renderMet();renderPresets();drawClock();}
 renderAll();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 setInterval(()=>{if(!$("sheet").classList.contains("on")&&!document.activeElement.matches("input,textarea"))renderHoy();},60000);

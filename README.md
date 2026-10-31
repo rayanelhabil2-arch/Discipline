@@ -12,6 +12,13 @@ https://rayanelhabil2-arch.github.io/Discipline/ (GitHub Pages, rama `gh-pages`)
 
 Todo se guarda en el navegador del móvil (`localStorage`, clave `panelVida.v1`). Para pasar los datos a otro móvil: **Metas → Copia de seguridad → Exportar** y luego **Importar** en el otro.
 
+## Notificaciones
+
+El sargento manda una frase a las 8, 15, 18, 21 y 23 h (hora de Madrid), aunque la app esté cerrada. Se activan en **Metas → Notificaciones** (en iPhone, solo abriendo la app desde el icono de la pantalla de inicio, iOS 16.4 o más).
+
+- Servidor: Supabase (mismo proyecto que Habita). Tablas `disciplina_push_subs` (suscripciones; la app solo puede añadir) y `disciplina_config` (claves VAPID y secreto del cron; sin acceso público).
+- Envío: función `supabase/functions/disciplina-push`, que `pg_cron` llama cada hora (tarea `disciplina-push-cada-hora`). Para cambiar frases u horas, edita `SLOTS` y vuelve a desplegarla.
+
 ## Instalar en el móvil
 
 1. Abre https://rayanelhabil2-arch.github.io/Discipline/ en Safari.
