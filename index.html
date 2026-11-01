@@ -374,7 +374,7 @@ const AG_NO=AG_CL.concat([["17:00-20:00","Estudiar y deberes"],["20:00-21:30","T
 const AG_SAT=[["09:30","Levantarse"],["10:00-12:00","Estudio: adelantar y repasar"],["12:00-12:30","Duolingo francés y alemán"],["12:30-20:00","Libre"],["22:00-22:30","Leer (10 páginas)"],["00:00","A dormir"]];
 const AG_SUN=[["09:30","Levantarse"],["10:00-12:00","Estudio: preparar la semana"],["12:00-12:30","Duolingo francés y alemán"],["12:30-19:00","Libre"],["19:00-19:30","Repaso del domingo y plan de la semana"],["22:00-22:30","Leer y examen nocturno"],["23:00","A dormir"]];
 const DEF={
-  ver:5,
+  ver:6,
   habits:[
     {id:"rezo",em:"🕌",name:"Rezar las 5 oraciones",days:ALL,parts:["Fajr","Dhuhr","Asr","Maghrib","Isha"]},
     {id:"fr",em:"🇫🇷",name:"Duolingo francés",days:ALL},
@@ -404,10 +404,7 @@ const DEF={
     grades:{"1":{},"2":{},"3":{}}},
   gym:{split:{1:"",2:"",4:"",5:""},exercises:[{id:"banca",name:"Press banca"},{id:"sentadilla",name:"Sentadilla"},{id:"muerto",name:"Peso muerto"},{id:"militar",name:"Press militar"},{id:"dominadas",name:"Dominadas"},{id:"remo",name:"Remo con barra"}],
     lifts:{},weights:[],wTarget:null,kcalTarget:0,kcal:{}},
-  savings:[
-    {id:"suiza",em:"🇨🇭",name:"Ahorro para Suiza",cur:0,target:5000},
-    {id:"carnet",em:"🪪",name:"Carnet de coche (España)",cur:0,target:1000},
-    {id:"coche",em:"🚗",name:"El coche que quiero",model:"",cur:0,target:6000}],
+  savings:[{id:"total",em:"💰",name:"Ahorrado total",cur:0,target:5000}],
   goals:[
     {id:"g0",name:"Evaluaciones de 2º aprobadas",cur:0,target:3,step:1,unit:""},
     {id:"g3",name:"Carnet de conducir (teórico + práctico)",cur:0,target:2,step:1,unit:""},
@@ -470,6 +467,9 @@ function merge(x){
       if(!A.some(e=>/batido/i.test(e[1]))){const i=A.findIndex(e=>/hermana/i.test(e[1]));A.splice(i<0?A.length:i,0,["16:00-16:15","Batido + creatina"]);}
       x.agenda[d]=A;});
     x.ver=5; }
+  if(x.ver<6){ x=Object.assign({},x);
+    if(Array.isArray(x.savings)){const tot=x.savings.reduce((a,b)=>a+(+b.cur||0),0);x.savings=[{id:"total",em:"💰",name:"Ahorrado total",cur:tot,target:5000}];}
+    x.ver=6; }
   const s=clone(DEF); Object.assign(s,x);
   if(!Array.isArray(s.dnotes)) s.dnotes=[];
   if(!Array.isArray(s.events)) s.events=[];
@@ -833,12 +833,12 @@ function renderMot(){
 
 // ================= RENDER: METAS =================
 function renderMet(){
-  let tot=0;
-  $("savings").innerHTML=S.savings.map(s=>{tot+=+s.cur||0;const pc=Math.min(100,s.target?s.cur/s.target*100:0);
-    return `<div class="goal"><div class="row between"><span class="nm">${esc(s.em)} ${esc(s.name)}${s.model?` <span class="small">· ${esc(s.model)}</span>`:""}</span><button class="lnk" data-a="editSav" data-id="${s.id}">Actualizar</button></div>
-    <div class="bar ${pc>=100?"g":""}"><i style="width:${pc}%"></i></div>
-    <div class="row between"><span class="money">${fmt(s.cur)} €</span><span class="small">de ${fmt(s.target)} € · ${Math.round(pc)}%${pc<100?" · faltan "+fmt(s.target-s.cur)+" €":""}</span></div></div>`}).join("");
-  $("savTot").textContent="total "+fmt(tot)+" €";
+  const sv=S.savings[0]||(S.savings[0]={id:"total",em:"💰",name:"Ahorrado total",cur:0,target:5000});
+  const pc=Math.min(100,sv.target?sv.cur/sv.target*100:0);
+  $("savings").innerHTML=`<div class="small">💰 Ahorrado total</div>
+    <div class="row between" style="align-items:flex-end"><span class="big" style="font-size:44px;color:var(--ok)">${fmt(sv.cur)} €</span><button class="btn sm red" data-a="editSav" data-id="${sv.id}">Actualizar</button></div>
+    ${sv.target?`<div class="bar g"><i style="width:${pc}%"></i></div><div class="small">Meta: ${fmt(sv.target)} € · ${Math.round(pc)}%${pc<100?" · faltan "+fmt(sv.target-sv.cur)+" €":" · ✓ conseguida"}</div>`:""}`;
+  $("savTot").textContent="";
   $("goals").innerHTML=S.goals.map(g=>{const pc=Math.min(100,g.target?g.cur/g.target*100:0);
     return `<div class="goal"><div class="row between"><span class="nm">${esc(g.name)}</span><button class="lnk" data-a="editGoal" data-id="${g.id}">Editar</button></div>
     <div class="bar ${pc>=100?"g":""}"><i style="width:${pc}%"></i></div>
@@ -1040,13 +1040,13 @@ function whySheet(){
   wire(()=>{S.mission.why=$("wy").value.split("\n").map(x=>x.trim()).filter(Boolean);save();closeSheet();renderMot();});
 }
 function savSheet(s){
-  openSheet(`<h2>${esc(s.em)} ${esc(s.name)}</h2>
-  <label>Lo que llevas ahorrado (€)</label><input id="sc" type="number" inputmode="decimal" value="${s.cur}">
-  <label>Objetivo (€)</label><input id="st" type="number" inputmode="decimal" value="${s.target}">
-  <label>Nombre</label><input id="sn" value="${esc(s.name)}">
-  ${s.id==="coche"?`<label>Modelo del coche</label><input id="sm" value="${esc(s.model||"")}" placeholder="p. ej. Seat León">`:""}
+  openSheet(`<h2>💰 Ahorrado total</h2>
+  <label>Sumar lo que has ahorrado ahora (€)</label><input id="sa" type="number" inputmode="decimal" placeholder="p. ej. 40">
+  <label>O escribe el total que tienes (€)</label><input id="sc" type="number" inputmode="decimal" value="${s.cur}">
+  <label>Meta (€, opcional)</label><input id="st" type="number" inputmode="decimal" value="${s.target||""}">
   ${footer(false)}`);
-  wire(()=>{const old=s.cur;s.cur=+$("sc").value||0;s.target=+$("st").value||1;s.name=val("sn")||s.name;if($("sm"))s.model=val("sm");save();closeSheet();renderMet();
+  $("sa").oninput=()=>{const a=parseFloat($("sa").value.replace(",","."));$("sc").value=isNaN(a)?s.cur:+(s.cur+a).toFixed(2);};
+  wire(()=>{const old=s.cur;s.cur=parseFloat($("sc").value.replace(",","."))||0;s.target=parseFloat($("st").value.replace(",","."))||0;save();closeSheet();renderMet();
     toast(s.cur>=s.target?"🏆 ¡Objetivo de ahorro conseguido!":s.cur>old?"+"+fmt(s.cur-old)+" €. Cada euro te acerca.":"Guardado");});
 }
 function goalSheet(g){
