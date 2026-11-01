@@ -1,11 +1,13 @@
 // Disciplina · envía las notificaciones con frases del sargento.
-// pg_cron la llama cada 30 minutos (cabecera x-cron-secret). Según el día y la hora de Madrid
-// decide si toca mandar algo. Con ?test=1 manda una al momento.
+// pg_cron la llama cada minuto (cabecera x-cron-secret). Según el día y la hora de Madrid
+// decide si toca mandar algo: las frases del horario y el aviso 10 min antes de cada rezo
+// (horarios de La Llagosta, método Liga Musulmana Mundial, Asr shafi). Con ?test=1 manda una al momento.
 // Horario de Rayan: clase 8:00–14:30, recoge a su hermana a las 16:30, estudia hasta el gym
 // (lun, mar, jue, vie 20:00–21:30) y se acuesta a las 23:00. Fines de semana libres.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { Coordinates, CalculationMethod, Madhab, PrayerTimes } from "npm:adhan@4.4.6";
 
 const APP = "https://rayanelhabil2-arch.github.io/Discipline/";
 const LV = [1, 2, 3, 4, 5], GYM = [1, 2, 4, 5], FINDE = [0, 6];
@@ -69,15 +71,24 @@ const SLOTS: Slot[] = [
 
 const pick = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 
-function madridNow() {
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
+function madrid(d: Date) {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(d);
   const g = (t: string) => parts.find((p) => p.type === t)!.value;
-  const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(g("weekday"));
-  const m = Number(g("minute"));
-  // el cron llega puntual a :00 y :30; redondeamos por si llega con unos segundos de retraso
-  const mm = m < 15 ? "00" : m < 45 ? "30" : "00";
-  const h = m >= 45 ? (Number(g("hour")) + 1) % 24 : Number(g("hour"));
-  return { dow, at: String(h).padStart(2, "0") + ":" + mm };
+  return { y: +g("year"), m: +g("month"), d: +g("day"), dow: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(g("weekday")), at: g("hour") + ":" + g("minute") };
+}
+
+// Aviso de rezo si dentro de 10 minutos empieza uno
+const REZOS: [keyof PrayerTimes, string][] = [["fajr", "Fajr"], ["dhuhr", "Dhuhr"], ["asr", "Asr"], ["maghrib", "Maghrib"], ["isha", "Isha"]];
+function prayerSlot(now: Date) {
+  const m = madrid(now);
+  const p = CalculationMethod.MuslimWorldLeague(); p.madhab = Madhab.Shafi;
+  const pt = new PrayerTimes(new Coordinates(41.5167, 2.1936), new Date(m.y, m.m - 1, m.d), p);
+  const in10 = madrid(new Date(now.getTime() + 10 * 60000)).at;
+  for (const [k, name] of REZOS) {
+    const at = madrid(pt[k] as Date).at;
+    if (at === in10) return { title: `🕌 ${name} en 10 minutos`, msgs: [`${name} a las ${at}. Prepárate y haz el wudu.`] };
+  }
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -89,10 +100,10 @@ Deno.serve(async (req) => {
   }
 
   const test = new URL(req.url).searchParams.get("test") === "1";
-  const now = madridNow();
+  const date = new Date(), now = madrid(date);
   const slot = test
     ? { title: "⚔ Disciplina", msgs: ["Las notificaciones funcionan. Ahora, a cumplir."] }
-    : SLOTS.find((s) => s.at === now.at && s.days.includes(now.dow));
+    : prayerSlot(date) ?? SLOTS.find((s) => s.at === now.at && s.days.includes(now.dow));
   if (!slot) return Response.json({ sent: 0, now, reason: "no toca" });
 
   webpush.setVapidDetails("mailto:rayanelhabil2@gmail.com", c.vapid_public, c.vapid_private);

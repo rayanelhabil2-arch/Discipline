@@ -354,6 +354,7 @@ svg text{font-family:Inter}
 <div class="sheet" id="sheet"><div class="in" id="sheetIn"></div></div>
 <div class="toast" id="toast"></div>
 
+<script src="adhan.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -687,14 +688,29 @@ function addNote(){
   if(d>today()) toast("Apuntado para el "+d.slice(5).split("-").reverse().join("/"));
 }
 const tmin=s=>{const[a,b]=s.trim().split(":").map(Number);return a*60+(b||0);};
+// ---- horarios de rezo (La Llagosta, Liga Musulmana Mundial, Asr shafi) ----
+const PRAY_POS={lat:41.5167,lng:2.1936};
+const PRAY_MAP={fajr:"Fajr",dhuhr:"Dhuhr",asr:"Asr",maghrib:"Maghrib",isha:"Isha"};
+const hm=d=>d.toLocaleTimeString("es-ES",{timeZone:"Europe/Madrid",hour:"2-digit",minute:"2-digit"});
+function prayerTimes(k){
+  try{const a=window.adhan;if(!a)return null;const [Y,M,D]=k.split("-").map(Number);
+    const p=a.CalculationMethod.MuslimWorldLeague();p.madhab=a.Madhab.Shafi;
+    const t=new a.PrayerTimes(new a.Coordinates(PRAY_POS.lat,PRAY_POS.lng),new Date(Y,M-1,D),p);
+    const o={};for(const [kk,n] of Object.entries(PRAY_MAP))o[n]=t[kk];o._sunrise=t.sunrise;return o;}catch(e){return null;}
+}
+function nextPrayer(){const t=prayerTimes(today());if(!t)return null;const now=new Date();
+  for(const n of Object.values(PRAY_MAP)){if(t[n]>now)return {n,at:t[n]};}
+  const d=new Date();d.setDate(d.getDate()+1);const t2=prayerTimes(key(d));return t2?{n:"Fajr",at:t2.Fajr}:null;}
 function habRow(h,k,manage){
   const on=isDone(h,k),hasP=h.parts&&h.parts.length,v=habVal(h,k)||{},act=h.days.includes(new Date(k+"T12:00").getDay());
-  const chips=hasP&&act?`<div class="chips">${h.parts.map(p=>`<button data-a="part" data-h="${h.id}" data-p="${esc(p)}" class="${v[p]?"on":""}">${esc(p)}</button>`).join("")}</div>`:"";
+  const PT=h.id==="rezo"?prayerTimes(k):null;
+  const chips=hasP&&act?`<div class="chips">${h.parts.map(p=>`<button data-a="part" data-h="${h.id}" data-p="${esc(p)}" class="${v[p]?"on":""}">${esc(p)}${PT&&PT[p]?" · "+hm(PT[p]):""}</button>`).join("")}</div>`:"";
   const circle=!act?"":hasP?`<button class="chk part ${on?"on":""}" data-a="hab" data-h="${h.id}">${on?"✓":partsDone(h,k)+"/"+h.parts.length}</button>`:`<button class="chk ${on?"on":""}" data-a="hab" data-h="${h.id}">${on?"✓":""}</button>`;
   let label=esc(h.name); if(h.id==="gym"){const sp=S.gym.split[new Date().getDay()]; if(sp) label+=" · "+esc(sp);}
   let sub="";
   if(manage){const s=habStreak(h);const dd=h.days.length===7?"cada día":[1,2,3,4,5,6,0].filter(d=>h.days.includes(d)).map(d=>DN[d]).join(" ");sub=`<div class="st">${act?(s?"🔥 "+s+" · ":""):"hoy no toca · "}${dd}</div>`;}
   else {const s=habStreak(h); if(s>=2) sub=`<div class="st">🔥 ${s} seguidos</div>`;}
+  if(h.id==="rezo"&&k===today()){const np=nextPrayer();if(np){const mins=Math.round((np.at-new Date())/60000);sub+=`<div class="st" style="color:var(--red2)">Próximo: ${np.n} a las ${hm(np.at)} · ${mins>=60?Math.floor(mins/60)+" h "+(mins%60)+" min":mins+" min"}</div>`;}}
   return `<div class="task ${on?"done":""} ${act?"":"off"}"><span class="em">${esc(h.em)}</span><div class="l"><div ${manage?`data-a="editHab" data-h="${h.id}" style="cursor:pointer"`:""}><div class="nm">${label}</div>${sub}</div>${chips}</div>${circle}</div>`;
 }
 
