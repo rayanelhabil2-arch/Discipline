@@ -169,8 +169,11 @@ svg text{font-family:Inter}
   </div>
 
   <div class="card">
-    <div class="hd"><h2>Las 3 obligaciones</h2><span class="small">lo más importante hoy</span></div>
-    <div id="prios"></div>
+    <div class="hd"><h2>Notas de hoy</h2><span class="small" id="nCount"></span></div>
+    <div id="dnotes"></div>
+    <div class="row" style="margin-top:10px"><input id="nIn" placeholder="Apunta algo: examen, llevar libro, llamar…" style="flex:1"><input id="nTime" type="time" style="width:96px;flex-shrink:0"><button class="btn red" data-a="noteAdd" style="flex-shrink:0">+</button></div>
+    <div class="row" style="margin-top:6px"><span class="small">Para otro día:</span><input id="nDate" type="date" style="width:auto;padding:6px 8px;font-size:12px"></div>
+    <div id="dnext" style="margin-top:8px"></div>
   </div>
 
   <div class="card">
@@ -339,12 +342,13 @@ const fmt=n=>(Math.round(n*100)/100).toLocaleString("es-ES");
 const ALL=[0,1,2,3,4,5,6], LV=[1,2,3,4,5];
 
 // ================= DATOS POR DEFECTO =================
-const AG_A=[["07:00","Levantarse a la hora · sin móvil"],["08:00-14:30","Clase"],["15:00-16:00","Comer y descansar"],["16:00-17:30","Deberes y repasar"],["17:30-18:00","Duolingo francés y alemán"],["18:00-19:00","Lectura / tiempo libre"]];
-const AG_GYM=AG_A.concat([["20:00-21:30","Gimnasio"],["23:30","A dormir"]]);
-const AG_NO=AG_A.concat([["20:00-21:00","Descanso activo"],["23:30","A dormir"]]);
-const AG_FS=[["09:30","Levantarse"],["10:30-12:30","Repasar la semana / adelantar deberes"],["12:30-13:00","Duolingo"],["17:00-18:00","Lectura"],["23:30","A dormir"]];
+const AG_CL=[["07:00","Levantarse · sin móvil la 1ª hora"],["07:30-08:00","Ir a clase"],["08:00-14:30","Clase"],["14:30-15:30","Comer y descansar"],["15:30-16:15","Duolingo francés y alemán"],["16:15-17:00","Recoger a mi hermana del cole (16:30)"]];
+const AG_GYM=AG_CL.concat([["17:00-19:30","Estudiar y deberes"],["19:30-20:00","Merendar y preparar el gym"],["20:00-21:30","Gimnasio"],["21:30-22:30","Ducha, cenar, batido + creatina"],["22:30-23:00","Leer y examen nocturno"],["23:00","A dormir"]]);
+const AG_NO=AG_CL.concat([["17:00-20:00","Estudiar y deberes"],["20:00-21:30","Tiempo libre"],["21:30-22:30","Cenar, batido + creatina"],["22:30-23:00","Leer y examen nocturno"],["23:00","A dormir"]]);
+const AG_SAT=[["09:30","Levantarse"],["10:00-12:00","Estudio: adelantar y repasar"],["12:00-12:30","Duolingo francés y alemán"],["12:30-20:00","Libre"],["22:00-22:30","Leer (10 páginas)"],["00:00","A dormir"]];
+const AG_SUN=[["09:30","Levantarse"],["10:00-12:00","Estudio: preparar la semana"],["12:00-12:30","Duolingo francés y alemán"],["12:30-19:00","Libre"],["19:00-19:30","Repaso del domingo y plan de la semana"],["22:00-22:30","Leer y examen nocturno"],["23:00","A dormir"]];
 const DEF={
-  ver:3,
+  ver:4,
   habits:[
     {id:"rezo",em:"🕌",name:"Rezar las 5 oraciones",days:ALL,parts:["Fajr","Dhuhr","Asr","Maghrib","Isha"]},
     {id:"fr",em:"🇫🇷",name:"Duolingo francés",days:ALL},
@@ -357,7 +361,7 @@ const DEF={
     {id:"batido",em:"🥤",name:"Batido de proteína",days:ALL},
     {id:"creatina",em:"⚡",name:"Creatina",days:ALL},
     {id:"gasto",em:"💰",name:"Cero gastos innecesarios",days:ALL},
-    {id:"sue",em:"🌙",name:"Dormir antes de las 00:00",days:ALL}
+    {id:"sue",em:"🌙",name:"A la cama a la hora (23:00 entre semana)",days:ALL}
   ],
   per:{
     w:[{id:"leer",em:"📖",name:"Leer",type:"count",target:10,unit:"páginas",step:5},
@@ -366,7 +370,7 @@ const DEF={
     m:[{id:"libro",em:"📕",name:"Terminar un libro",type:"count",target:1,unit:"libro",step:1},
        {id:"repmes",em:"🧭",name:"Repaso del mes",type:"check",review:["¿Qué he logrado este mes?","¿Qué tengo que mejorar?","Objetivo principal del mes que viene"]}]
   },
-  agenda:{0:AG_FS,1:AG_GYM,2:AG_GYM,3:AG_NO,4:AG_GYM,5:AG_GYM,6:AG_FS},
+  agenda:{0:AG_SUN,1:AG_GYM,2:AG_GYM,3:AG_NO,4:AG_GYM,5:AG_GYM,6:AG_SAT},
   studies:{target:6,subjects:[
     {id:"mat",name:"Matemáticas CCSS II"},{id:"emp",name:"Empresa y diseño de modelos de negocio"},{id:"geo",name:"Geografía"},
     {id:"his",name:"Historia"},{id:"fil",name:"Historia de la Filosofía"},{id:"cas",name:"Lengua castellana"},
@@ -401,7 +405,7 @@ const DEF={
     countdowns:[{id:"c1",name:"fin de bachi",date:"2027-06-01"},{id:"c2",name:"Suiza",date:"2027-07-01"}],
     why:["No voy a repetir 2º de bachillerato.","Quiero demostrar a los que dudaron de mí que se equivocaban.","Quiero mi carnet y mi propio coche.","Quiero irme a Suiza, trabajar, ahorrar y estudiar un ciclo."]
   },
-  log:{},prios:{},agDone:{},focus:{},review:{},plog:{},prev:{},notes:""
+  log:{},prios:{},dnotes:[],agDone:{},focus:{},review:{},plog:{},prev:{},notes:""
 };
 const RANKS=[[0,"🪖","Recluta"],[3,"🛡️","Soldado"],[7,"🗡️","Hoplita"],[14,"⚔️","Guerrero"],[30,"🦅","Centurión"],[60,"🏛️","Legado"],[100,"🔱","Espartano"],[200,"👑","Leyenda"]];
 const QUOTES=[
@@ -432,7 +436,10 @@ function merge(x){
     const ids=new Set(DEF.habits.map(h=>h.id).concat(["agua","pelo"]));
     x._extraHab=keepHab.filter(h=>!ids.has(h.id));
   }
+  if(x.ver<4){ x=Object.assign({},x); delete x.agenda; x.agDone={}; x.ver=4;
+    if(Array.isArray(x.habits)){const h=x.habits.find(h=>h.id==="sue");if(h&&h.name==="Dormir antes de las 00:00")h.name="A la cama a la hora (23:00 entre semana)";} }
   const s=clone(DEF); Object.assign(s,x);
+  if(!Array.isArray(s.dnotes)) s.dnotes=[];
   if(!s.start){const ks=Object.keys(s.log).sort();s.start=ks[0]&&ks[0]<today()?ks[0]:today();}
   if(s._extraHab){ s.habits=s.habits.concat(s._extraHab); delete s._extraHab; }
   ["log","prios","agDone","focus","review","plog","prev","agenda"].forEach(k=>{if(!s[k]||typeof s[k]!=="object")s[k]=clone(DEF[k]);});
@@ -468,12 +475,14 @@ const partsDone=(h,k)=>{const v=habVal(h,k);return h.parts&&h.parts.length?h.par
 const habFrac=(h,k)=>h.parts&&h.parts.length?partsDone(h,k)/h.parts.length:(habVal(h,k)?1:0);
 const isDone=(h,k)=>habFrac(h,k)>=1;
 function dayScore(d){
-  const k=key(d),dow=d.getDay(),hs=habFor(dow),ag=agFor(dow),pr=(S.prios[k]||[]).filter(p=>p.t&&p.t.trim()),ad=S.agDone[k]||{};
+  const k=key(d),dow=d.getDay(),hs=habFor(dow),ag=agFor(dow),pr=notesFor(k),ad=S.agDone[k]||{};
   const tot=hs.length+ag.length+pr.length;
-  const dn=hs.reduce((a,h)=>a+habFrac(h,k),0)+ag.filter((a,i)=>ad[i]).length+pr.filter(p=>p.d).length;
+  const dn=hs.reduce((a,h)=>a+habFrac(h,k),0)+ag.filter((a,i)=>ad[i]).length+pr.filter(p=>p.d&&p.doneDate===k).length;
   return tot?Math.round(dn/tot*100):0;
 }
 const cumplido=d=>dayScore(d)>=70;
+// notas visibles un día: las de ese día o anteriores sin hacer, y las hechas ese día
+function notesFor(k){return S.dnotes.filter(n=>n.date<=k&&(!n.d||n.doneDate===k));}
 // racha con regla "no fallar dos veces": un fallo suelto se perdona
 function streakOf(doneFn,activeFn){
   let c=0,miss=0;const d=new Date();
@@ -551,8 +560,7 @@ function renderHoy(){
   $("rkTxt").textContent=st+" días cumplidos seguidos"+(nx?" · "+(nx[0]-st)+" para "+nx[2]:"");
   $("rkBar").style.width=(nx?Math.min(100,(st-r[0])/(nx[0]-r[0])*100):100)+"%";
   // prioridades
-  const P=S.prios[t]||(S.prios[t]=[{t:"",d:false},{t:"",d:false},{t:"",d:false}]);
-  $("prios").innerHTML=P.map((x,i)=>`<div class="prio ${x.d?"done":""}"><span class="n">${i+1}</span><input data-pt="${i}" value="${esc(x.t)}" placeholder="${["Lo más importante","Lo segundo","Lo tercero"][i]}"><button class="chk ${x.d?"on":""}" data-a="prio" data-i="${i}">${x.d?"✓":""}</button></div>`).join("");
+  renderNotes();
   // diario
   const hs=habFor(dow);
   $("dailyHoy").innerHTML=hs.map(x=>habRow(x,t,false)).join("")||'<div class="hint">Hoy no toca nada.</div>';
@@ -562,6 +570,21 @@ function renderHoy(){
   $("tl").innerHTML=ag.length?ag.map(([tm,lab],i)=>{let cls="";try{const ps=tm.split("-"),s=tmin(ps[0]),e=ps[1]?tmin(ps[1]):s+30;if(cur>=s&&cur<e)cls="now";}catch(e){}
     return `<div class="task ${ad[i]?"done":""} ${cls}"><span class="t">${esc(tm.replace("-"," – "))}</span><span class="l nm">${esc(lab)}</span><button class="chk ${ad[i]?"on":""}" data-a="ag" data-i="${i}">${ad[i]?"✓":""}</button></div>`}).join(""):'<div class="hint">Nada planeado. Toca «Editar».</div>';
   const R=S.review[t]||{};document.querySelectorAll("[data-rv]").forEach(el=>{if(document.activeElement!==el)el.value=R[el.dataset.rv]||"";});
+}
+function renderNotes(){
+  const t=today(),L=notesFor(t).slice().sort((a,b)=>(a.d-b.d)||((a.time||"99")<(b.time||"99")?-1:1));
+  $("dnotes").innerHTML=L.length?L.map(n=>{const old=n.date<t&&!n.d;
+    return `<div class="task ${n.d?"done":""}"><span class="t" style="width:46px">${n.time?esc(n.time):""}</span><div class="l"><div class="nm">${esc(n.t)}</div>${old?'<div class="st ko">⚠ pendiente desde '+n.date.slice(5).split("-").reverse().join("/")+'</div>':""}</div><button class="lnk" data-a="noteDel" data-id="${n.id}" style="color:var(--mut)">✕</button><button class="chk ${n.d?"on":""}" data-a="noteChk" data-id="${n.id}">${n.d?"✓":""}</button></div>`}).join(""):'<div class="hint">Nada apuntado. Lo que no hagas hoy pasa solo a mañana.</div>';
+  $("nCount").textContent=L.length?L.filter(n=>n.d).length+" / "+L.length:"";
+  const nx=S.dnotes.filter(n=>n.date>t&&!n.d).sort((a,b)=>a.date<b.date?-1:1);
+  $("dnext").innerHTML=nx.length?'<div class="small" style="margin-bottom:4px">PRÓXIMOS</div>'+nx.map(n=>`<div class="task"><span class="t" style="width:46px">${n.date.slice(5).split("-").reverse().join("/")}</span><div class="l nm">${esc(n.t)}${n.time?' <span class="small">· '+esc(n.time)+'</span>':""}</div><button class="lnk" data-a="noteDel" data-id="${n.id}" style="color:var(--mut)">✕</button></div>`).join(""):"";
+}
+function addNote(){
+  const txt=$("nIn").value.trim(); if(!txt) return;
+  const d=$("nDate").value||today();
+  S.dnotes.push({id:"n"+Date.now(),t:txt,time:$("nTime").value||"",date:d<today()?today():d,d:false});
+  $("nIn").value="";$("nTime").value="";$("nDate").value="";save();renderHoy();
+  if(d>today()) toast("Apuntado para el "+d.slice(5).split("-").reverse().join("/"));
 }
 const tmin=s=>{const[a,b]=s.trim().split(":").map(Number);return a*60+(b||0);};
 function habRow(h,k,manage){
@@ -720,7 +743,9 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("[data-a]"); if(!b) return;
   const a=b.dataset.a,t=today(),was=dayScore(new Date());
   switch(a){
-    case "prio":{const P=S.prios[t];P[b.dataset.i].d=!P[b.dataset.i].d;save();renderHoy();afterCheck(was);break;}
+    case "noteAdd": addNote(); break;
+    case "noteChk":{const n=S.dnotes.find(x=>x.id===b.dataset.id);n.d=!n.d;n.doneDate=n.d?t:null;save();renderHoy();afterCheck(was);break;}
+    case "noteDel":{S.dnotes=S.dnotes.filter(x=>x.id!==b.dataset.id);save();renderHoy();break;}
     case "ag":{S.agDone[t]=S.agDone[t]||{};S.agDone[t][b.dataset.i]=!S.agDone[t][b.dataset.i];save();renderHoy();afterCheck(was);break;}
     case "hab":{const h=S.habits.find(x=>x.id===b.dataset.h);S.log[t]=S.log[t]||{};
       if(h.parts&&h.parts.length){const all=isDone(h,t),v={};h.parts.forEach(p=>v[p]=!all);S.log[t][h.id]=v;}else S.log[t][h.id]=!S.log[t][h.id];
@@ -758,8 +783,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("click",e=>{const b=e.target.closest("[data-kc]");if(!b)return;const t=today();S.gym.kcal[t]=Math.max(0,(S.gym.kcal[t]||0)+ +b.dataset.kc);save();renderGym();const tg=+S.gym.kcalTarget;if(tg&&S.gym.kcal[t]>=tg&&S.gym.kcal[t]-+b.dataset.kc<tg)toast("🍗 Objetivo de calorías cumplido");});
-$("prios").addEventListener("input",e=>{const i=e.target.dataset.pt;if(i==null)return;S.prios[today()][i].t=e.target.value;save();});
-$("prios").addEventListener("change",()=>renderHoy());
+$("nIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addNote();}});
 document.querySelectorAll("[data-rv]").forEach(el=>el.addEventListener("input",()=>{const t=today();S.review[t]=S.review[t]||{};S.review[t][el.dataset.rv]=el.value;save();}));
 document.addEventListener("input",e=>{const el=e.target;if(!el.dataset||!el.dataset.prev)return;const[p,id,i]=el.dataset.prev.split("|"),pk=perKey(p);S.prev[pk]=S.prev[pk]||{};S.prev[pk][id]=S.prev[pk][id]||{};S.prev[pk][id][i]=el.value;save();});
 $("notes").addEventListener("input",e=>{S.notes=e.target.value;save();});
