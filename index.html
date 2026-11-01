@@ -368,13 +368,13 @@ const fmt=n=>(Math.round(n*100)/100).toLocaleString("es-ES");
 const ALL=[0,1,2,3,4,5,6], LV=[1,2,3,4,5];
 
 // ================= DATOS POR DEFECTO =================
-const AG_CL=[["07:00","Levantarse · sin móvil la 1ª hora"],["07:30-08:00","Ir a clase"],["08:00-14:30","Clase"],["14:30-15:30","Comer y descansar"],["15:30-16:15","Duolingo francés y alemán"],["16:15-17:00","Recoger a mi hermana del cole (16:30)"]];
-const AG_GYM=AG_CL.concat([["17:00-19:30","Estudiar y deberes"],["19:30-20:00","Merendar y preparar el gym"],["20:00-21:30","Gimnasio"],["21:30-22:30","Ducha, cenar, batido + creatina"],["22:30-23:00","Leer y examen nocturno"],["23:00","A dormir"]]);
-const AG_NO=AG_CL.concat([["17:00-20:00","Estudiar y deberes"],["20:00-21:30","Tiempo libre"],["21:30-22:30","Cenar, batido + creatina"],["22:30-23:00","Leer y examen nocturno"],["23:00","A dormir"]]);
+const AG_CL=[["07:00","Levantarse · sin móvil la 1ª hora"],["07:30-08:00","Ir a clase"],["08:00-14:30","Clase"],["14:30-15:30","Comer y descansar"],["15:30-16:00","Duolingo francés y alemán"],["16:00-16:15","Batido + creatina"],["16:15-17:00","Recoger a mi hermana del cole (16:30)"]];
+const AG_GYM=AG_CL.concat([["17:00-19:30","Estudiar y deberes"],["19:30-20:00","Merendar y preparar el gym"],["20:00-21:30","Gimnasio"],["21:30-22:30","Ducha y cenar"],["22:30-23:00","Leer y examen nocturno"],["23:00","A dormir"]]);
+const AG_NO=AG_CL.concat([["17:00-20:00","Estudiar y deberes"],["20:00-21:30","Tiempo libre"],["21:30-22:30","Cenar"],["22:30-23:00","Leer y examen nocturno"],["23:00","A dormir"]]);
 const AG_SAT=[["09:30","Levantarse"],["10:00-12:00","Estudio: adelantar y repasar"],["12:00-12:30","Duolingo francés y alemán"],["12:30-20:00","Libre"],["22:00-22:30","Leer (10 páginas)"],["00:00","A dormir"]];
 const AG_SUN=[["09:30","Levantarse"],["10:00-12:00","Estudio: preparar la semana"],["12:00-12:30","Duolingo francés y alemán"],["12:30-19:00","Libre"],["19:00-19:30","Repaso del domingo y plan de la semana"],["22:00-22:30","Leer y examen nocturno"],["23:00","A dormir"]];
 const DEF={
-  ver:4,
+  ver:5,
   habits:[
     {id:"rezo",em:"🕌",name:"Rezar las 5 oraciones",days:ALL,parts:["Fajr","Dhuhr","Asr","Maghrib","Isha"]},
     {id:"fr",em:"🇫🇷",name:"Duolingo francés",days:ALL},
@@ -464,6 +464,12 @@ function merge(x){
   }
   if(x.ver<4){ x=Object.assign({},x); delete x.agenda; x.agDone={}; x.ver=4;
     if(Array.isArray(x.habits)){const h=x.habits.find(h=>h.id==="sue");if(h&&h.name==="Dormir antes de las 00:00")h.name="A la cama a la hora (23:00 entre semana)";} }
+  if(x.ver<5&&x.agenda){ x=Object.assign({},x); x.agenda=JSON.parse(JSON.stringify(x.agenda));
+    [1,2,3,4,5].forEach(d=>{let A=x.agenda[d];if(!Array.isArray(A))return;
+      A=A.map(([t,l])=>l==="Ducha, cenar, batido + creatina"?[t,"Ducha y cenar"]:l==="Cenar, batido + creatina"?[t,"Cenar"]:l==="Duolingo francés y alemán"&&t==="15:30-16:15"?["15:30-16:00",l]:[t,l]);
+      if(!A.some(e=>/batido/i.test(e[1]))){const i=A.findIndex(e=>/hermana/i.test(e[1]));A.splice(i<0?A.length:i,0,["16:00-16:15","Batido + creatina"]);}
+      x.agenda[d]=A;});
+    x.ver=5; }
   const s=clone(DEF); Object.assign(s,x);
   if(!Array.isArray(s.dnotes)) s.dnotes=[];
   if(!Array.isArray(s.events)) s.events=[];

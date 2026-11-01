@@ -22,6 +22,10 @@ const SLOTS: Slot[] = [
     "Francés y alemán, los dos. Suiza no espera.",
     "15 minutos ahora valen más que una hora mañana.",
   ]},
+  { days: LV, at: "16:00", title: "🥤 Batido + creatina", msgs: [
+    "Tómatelo antes de ir a por tu hermana. El gym empieza aquí.",
+    "Batido y creatina. Sin esto no hay volumen.",
+  ]},
   { days: LV, at: "17:00", title: "📚 A estudiar", msgs: [
     "Los que dijeron que repetirías no van a estudiar por ti. Tú sí.",
     "Deberes al día. Sin excusas.",
@@ -37,8 +41,8 @@ const SLOTS: Slot[] = [
     "Cansado también se puede. Hazlo cansado.",
     "Supera tu récord. Apúntalo en la app.",
   ]},
-  { days: LV, at: "21:30", title: "🥤 Cuerpo y disciplina", msgs: [
-    "Cena, batido y creatina. El volumen se hace en la cocina.",
+  { days: LV, at: "21:30", title: "🍗 Cuerpo y disciplina", msgs: [
+    "Cena fuerte. El volumen se hace en la cocina.",
     "¿Has llegado a tus calorías? Apúntalas.",
     "La disciplina es libertad. La pereza es una cárcel.",
   ]},
