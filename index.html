@@ -1127,7 +1127,12 @@ $("freset").onclick=()=>{clearInterval(fTick);fEnd=null;fLeft=fLen;drawClock();}
 $("tabs").onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+b.dataset.v));window.scrollTo(0,0);};
 function renderAll(){try{notifStatus();renderSyncCard();}catch(e){}renderHoy();renderObj();renderEst();renderGym();renderMot();renderMet();renderPresets();drawClock();}
 renderAll();
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator){
+  // cuando hay versión nueva, se instala y la app se recarga sola una vez
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(reloaded)return;reloaded=true;location.reload();});
+  navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>{r.update();document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")r.update();});}).catch(()=>{});
+}
 setInterval(()=>{if(!$("sheet").classList.contains("on")&&!document.activeElement.matches("input,textarea"))renderHoy();},60000);
 </script>
 </body>
