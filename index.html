@@ -182,14 +182,6 @@ svg text{font-family:Inter}
   </div>
 
   <div class="card">
-    <div class="hd"><h2>Notas de hoy</h2><span class="small" id="nCount"></span></div>
-    <div id="dnotes"></div>
-    <div class="row" style="margin-top:10px"><input id="nIn" placeholder="Apunta algo: examen, llevar libro, llamar…" style="flex:1"><input id="nTime" type="time" style="width:96px;flex-shrink:0"><button class="btn red" data-a="noteAdd" style="flex-shrink:0">+</button></div>
-    <div class="row" style="margin-top:6px"><span class="small">Para otro día:</span><input id="nDate" type="date" style="width:auto;padding:6px 8px;font-size:12px"></div>
-    <div id="dnext" style="margin-top:8px"></div>
-  </div>
-
-  <div class="card">
     <div class="hd"><h2 id="calTitle">Calendario</h2><div class="row"><button class="btn sm" data-a="calPrev">‹</button><button class="btn sm" data-a="calToday">Hoy</button><button class="btn sm" data-a="calNext">›</button></div></div>
     <div class="cal" id="cal"></div>
     <div class="hd" style="margin:14px 0 4px"><span class="small" id="calDayT"></span><button class="lnk" data-a="evAdd">+ Añadir</button></div>
@@ -536,7 +528,7 @@ const partsDone=(h,k)=>{const v=habVal(h,k);return h.parts&&h.parts.length?h.par
 const habFrac=(h,k)=>h.parts&&h.parts.length?partsDone(h,k)/h.parts.length:(habVal(h,k)?1:0);
 const isDone=(h,k)=>habFrac(h,k)>=1;
 function dayScore(d){
-  const k=key(d),dow=d.getDay(),hs=habFor(dow),ag=agFor(dow),pr=notesFor(k),ad=S.agDone[k]||{};
+  const k=key(d),dow=d.getDay(),hs=habFor(dow),ag=agFor(dow),pr=[],ad=S.agDone[k]||{};
   const tot=hs.length+ag.length+pr.length;
   const dn=hs.reduce((a,h)=>a+habFrac(h,k),0)+ag.filter((a,i)=>ad[i]).length+pr.filter(p=>p.d&&p.doneDate===k).length;
   return tot?Math.round(dn/tot*100):0;
@@ -628,7 +620,7 @@ function renderHoy(){
   $("rkTxt").textContent=st+" días cumplidos seguidos"+(nx?" · "+(nx[0]-st)+" para "+nx[2]:"");
   $("rkBar").style.width=(nx?Math.min(100,(st-r[0])/(nx[0]-r[0])*100):100)+"%";
   // prioridades
-  renderNotes(); renderCal();
+  renderCal();
   // diario
   const hs=habFor(dow);
   $("dailyHoy").innerHTML=hs.map(x=>habRow(x,t,false)).join("")||'<div class="hint">Hoy no toca nada.</div>';
@@ -914,7 +906,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("click",e=>{const b=e.target.closest("[data-kc]");if(!b)return;const t=today();S.gym.kcal[t]=Math.max(0,(S.gym.kcal[t]||0)+ +b.dataset.kc);save();renderGym();const tg=+S.gym.kcalTarget;if(tg&&S.gym.kcal[t]>=tg&&S.gym.kcal[t]-+b.dataset.kc<tg)toast("🍗 Objetivo de calorías cumplido");});
-$("nIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addNote();}});
+
 document.querySelectorAll("[data-rv]").forEach(el=>el.addEventListener("input",()=>{const t=today();S.review[t]=S.review[t]||{};S.review[t][el.dataset.rv]=el.value;save();}));
 document.addEventListener("input",e=>{const el=e.target;if(!el.dataset||!el.dataset.prev)return;const[p,id,i]=el.dataset.prev.split("|"),pk=perKey(p);S.prev[pk]=S.prev[pk]||{};S.prev[pk][id]=S.prev[pk][id]||{};S.prev[pk][id][i]=el.value;save();});
 $("notes").addEventListener("input",e=>{S.notes=e.target.value;save();});
