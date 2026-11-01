@@ -261,9 +261,9 @@ svg text{font-family:Inter}
   <div class="e">Cuerpo</div>
   <h1>Gym</h1>
   <div class="card">
-    <div class="hd"><h2>Hoy toca</h2><button class="lnk" data-a="editSplit">Editar rutina</button></div>
+    <div class="hd"><h2>Hoy toca</h2><span class="small" id="gymDoneC"></span></div>
     <div class="big" id="gymToday" style="font-size:26px"></div>
-    <div class="dseg" id="splitWeek" style="margin-top:12px"></div>
+    <div id="gymTodayEx" style="margin-top:6px"></div>
   </div>
   <div class="card">
     <div class="hd"><h2>Volumen de hoy</h2><button class="lnk" data-a="editKcal">Objetivo</button></div>
@@ -279,9 +279,8 @@ svg text{font-family:Inter}
     <div class="hint" id="wHint"></div>
   </div>
   <div class="card">
-    <div class="hd"><h2>Fuerza · récords</h2><button class="lnk" data-a="addEx">+ Ejercicio</button></div>
-    <div id="lifts"></div>
-    <p class="hint" style="margin:8px 0 0">Toca un ejercicio para apuntar una serie (kilos × repeticiones) y ver tu progreso.</p>
+    <div class="hd"><h2>Mi rutina</h2><button class="lnk" data-a="editSplit">Editar</button></div>
+    <div id="routine"></div>
   </div>
 </section>
 
@@ -807,8 +806,14 @@ function renderEst(){
 function renderGym(){
   const dow=new Date().getDay(),sp=S.gym.split;
   const gd=(S.habits.find(h=>h.id==="gym")||{days:[1,2,4,5]}).days;
-  $("gymToday").textContent=gd.includes(dow)?(sp[dow]||"Día de gym · toca «Editar rutina»"):"Descanso. Recupera y come bien.";
-  $("splitWeek").innerHTML=[1,2,3,4,5,6,0].filter(d=>gd.includes(d)).map(d=>`<button class="${d===dow?"on":""}" data-a="editSplit">${DN[d]}: ${esc(sp[d]||"—")}</button>`).join("");
+  const plan=S.gym.plan||(S.gym.plan={}), td=today(), gdone=(S.gym.done=S.gym.done||{})[td]||{};
+  const isGym=gd.includes(dow), exT=isGym?(plan[dow]||[]):[];
+  $("gymToday").textContent=isGym?(sp[dow]||"Día de gym"):"Descanso. Recupera y come bien.";
+  $("gymTodayEx").innerHTML=isGym?(exT.length?exT.map((e,i)=>`<div class="task ${gdone[i]?"done":""}"><span class="l nm">${esc(e)}</span><button class="chk ${gdone[i]?"on":""}" data-a="exChk" data-i="${i}">${gdone[i]?"✓":""}</button></div>`).join(""):'<div class="hint">Toca «Editar» en Mi rutina para poner los ejercicios de hoy.</div>'):"";
+  $("gymDoneC").textContent=exT.length?exT.filter((e,i)=>gdone[i]).length+" / "+exT.length:"";
+  $("routine").innerHTML=[1,2,3,4,5,6,0].filter(d=>gd.includes(d)).map(d=>{const L=plan[d]||[];
+    return `<div class="goal" data-a="editSplit" data-d="${d}" style="cursor:pointer"><div class="row between"><span class="nm"><span style="color:var(--red2)">${DN[d].toUpperCase()}</span> · ${esc(sp[d]||"Sin poner")}</span>${d===dow?'<span class="small">hoy</span>':""}</div>
+    <div class="small" style="margin-top:4px;line-height:1.6">${L.length?L.map(esc).join("<br>"):"Toca para añadir los ejercicios"}</div></div>`}).join("")||'<div class="hint">No tienes días de gym. Actívalos en el hábito «Gimnasio».</div>';
   const t=today(),k=S.gym.kcal[t]||0,tg=+S.gym.kcalTarget||0;
   $("kcalNow").textContent=k.toLocaleString("es-ES");
   $("kcalOf").textContent=tg?"/ "+tg.toLocaleString("es-ES")+" kcal":"kcal";
@@ -828,9 +833,6 @@ function renderGym(){
   else if(S.gym.wTarget) hint="✓ Has llegado a tu objetivo. Pon uno nuevo.";
   if(last) hint+=(hint?" · ":"")+"Actualizado el "+last.d.slice(5).split("-").reverse().join("/")+".";
   $("wHint").textContent=hint;
-  // lifts
-  $("lifts").innerHTML=S.gym.exercises.map(ex=>{const L=(S.gym.lifts[ex.id]||[]);const best=L.reduce((m,x)=>!m||x.kg>m.kg||(x.kg===m.kg&&x.reps>m.reps)?x:m,null);const lst=L[L.length-1];
-    return `<div class="lift" data-a="openEx" data-x="${ex.id}" style="cursor:pointer"><div><div style="font-weight:700">${esc(ex.name)}</div><div class="small">${lst?"Última: "+fmt(lst.kg)+" kg × "+lst.reps+" · "+lst.d.slice(5).split("-").reverse().join("/"):"Sin registros"}</div></div><div style="text-align:right"><div class="small">Récord</div><div class="money" style="font-size:20px;color:var(--gold)">${best?fmt(best.kg)+" kg":"–"}</div></div></div>`}).join("")||'<div class="hint">Añade ejercicios.</div>';
 }
 function chart(W){
   const w=340,h=120,p=24,xs=W.map((_,i)=>p+i*(w-2*p)/(W.length-1)),ks=W.map(x=>x.kg);
@@ -907,7 +909,9 @@ document.addEventListener("click",e=>{
     case "editGrade": gradeSheet(b.dataset.s,b.dataset.g); break;
     case "editSubj": subjSheet(S.studies.subjects.find(x=>x.id===b.dataset.s)); break;
     case "addSubj": subjSheet(null); break;
-    case "editSplit": splitSheet(); break;
+    case "editSplit": splitSheet(b.dataset.d!=null?+b.dataset.d:null); break;
+    case "exChk":{const t=today();S.gym.done=S.gym.done||{};S.gym.done[t]=S.gym.done[t]||{};S.gym.done[t][b.dataset.i]=!S.gym.done[t][b.dataset.i];save();renderGym();
+      const L=(S.gym.plan||{})[new Date().getDay()]||[];if(L.length&&L.every((e,i)=>S.gym.done[t][i]))toast("🏋️ Rutina completada. Bestia.");break;}
     case "editKcal": kcalSheet(); break;
     case "kcalCustom": kcalAddSheet(); break;
     case "addWeight": weightSheet(); break;
@@ -1004,12 +1008,19 @@ function subjSheet(s){
   wire(()=>{if(!val("sn"))return;s.name=val("sn");const tg=$("stg").value;if(tg==="")delete s.target;else s.target=+tg;S.studies.target=+$("sgt").value||6;s.crit={p:+$("cp").value||0,t:+$("ct").value||0,o:+$("co").value||0};if(isNew)S.studies.subjects.push(s);save();closeSheet();renderEst();renderHoy();},
     ()=>{S.studies.subjects=S.studies.subjects.filter(x=>x.id!==s.id);save();closeSheet();renderEst();});
 }
-function splitSheet(){
-  const gd=(S.habits.find(h=>h.id==="gym")||{days:[1,2,4,5]}).days;
-  openSheet(`<h2>Rutina de gym</h2><p class="hint">Escribe qué entrenas cada día. Ej: Pecho y tríceps, Espalda y bíceps, Pierna, Hombro y brazo…</p>
-  ${[1,2,3,4,5,6,0].filter(d=>gd.includes(d)).map(d=>`<label>${DNL[d]}</label><input data-sp="${d}" value="${esc(S.gym.split[d]||"")}">`).join("")}
-  <p class="hint" style="margin-top:10px">Para cambiar qué días vas, edita el hábito «Gimnasio» en Objetivos.</p>${footer(false)}`);
-  wire(()=>{document.querySelectorAll("[data-sp]").forEach(el=>S.gym.split[el.dataset.sp]=el.value.trim());save();closeSheet();renderGym();renderHoy();});
+function splitSheet(day){
+  const gd=(S.habits.find(h=>h.id==="gym")||{days:[1,2,4,5]}).days, days=[1,2,3,4,5,6,0].filter(d=>gd.includes(d));
+  if(day==null||!days.includes(day)) day=days.includes(new Date().getDay())?new Date().getDay():days[0];
+  if(day==null){toast("Activa tus días de gym en el hábito «Gimnasio»");return;}
+  S.gym.plan=S.gym.plan||{};
+  openSheet(`<h2>Mi rutina</h2>
+  <label>Día</label><div class="dseg" id="rd">${days.map(d=>`<button data-d="${d}" class="${d===day?"on":""}">${DN[d]}</button>`).join("")}</div>
+  <label>Qué entrenas el ${DNL[day]}</label><input id="rt" value="${esc(S.gym.split[day]||"")}" placeholder="p. ej. Pecho y espalda">
+  <label>Ejercicios (uno por línea)</label><textarea id="rx" rows="8" placeholder="Press banca 4x10&#10;Dominadas 4x8&#10;Remo con barra 3x10&#10;Aperturas 3x12">${esc((S.gym.plan[day]||[]).join("\n"))}</textarea>
+  <p class="hint">Puedes poner series, repeticiones o kilos como quieras: «Press banca 4x10 · 60 kg».</p>${footer(false)}`);
+  const commit=()=>{S.gym.split[day]=val("rt");S.gym.plan[day]=$("rx").value.split("\n").map(x=>x.trim()).filter(Boolean);};
+  $("rd").onclick=e=>{const b=e.target.closest("[data-d]");if(!b)return;commit();save();splitSheet(+b.dataset.d);};
+  wire(()=>{commit();save();closeSheet();renderGym();renderHoy();toast("Rutina guardada");});
 }
 function kcalSheet(){
   openSheet(`<h2>Objetivo de calorías</h2><label>Calorías al día</label><input id="kt" type="number" inputmode="numeric" value="${S.gym.kcalTarget||""}" placeholder="p. ej. 2800">
