@@ -333,6 +333,7 @@ svg text{font-family:Inter}
   </div>
   <div class="card"><div class="hd"><h2>Sincronización</h2><span class="small" id="syncState"></span></div>
     <p class="hint" id="syncHint"></p>
+    <div class="row" id="keyRow"><input id="keyIn" placeholder="Pega aquí tu clave privada" autocapitalize="off" autocomplete="off" spellcheck="false"><button class="btn red" data-a="keySave">Activar</button></div>
   </div>
   <div class="card"><div class="hd"><h2>Copia de seguridad</h2></div>
     <p class="hint">Para pasar tus datos a otro móvil o a otra versión de la app.</p>
@@ -513,6 +514,7 @@ async function pullRemote(){
 function setSync(t){$("sync").textContent=t;try{renderSyncCard();}catch(e){}}
 function renderSyncCard(){
   $("syncState").textContent=SYNC_KEY?"activa ✓":"desactivada";
+  $("keyRow").style.display=SYNC_KEY?"none":"flex";
   $("syncHint").textContent=SYNC_KEY?"Tus datos se guardan en tu cuenta privada. Así Claude puede apuntarte cosas en el calendario o tus notas cuando se lo digas, y no pierdes nada si cambias de móvil.":"Ábrela una vez con el enlace privado que te dio Claude para activarla.";
 }
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")pullRemote();});
@@ -846,6 +848,7 @@ document.addEventListener("click",e=>{
   const a=b.dataset.a,t=today(),was=dayScore(new Date());
   switch(a){
     case "noteAdd": addNote(); break;
+    case "keySave":{const k=$("keyIn").value.trim().replace(/^.*#k=/,"");if(!/^[A-Za-z0-9_-]{24,}$/.test(k)){toast("Esa clave no es válida");break;}SYNC_KEY=k;try{localStorage.setItem("disc.key",k);}catch(e){}$("keyIn").value="";renderSyncCard();pullRemote().then(()=>toast("🔐 Sincronización activada"));break;}
     case "calPick": calSel=b.dataset.d; renderCal(); break;
     case "calPrev": case "calNext":{let [Y,M]=calM;M+=a==="calNext"?1:-1;if(M<0){M=11;Y--;}if(M>11){M=0;Y++;}calM=[Y,M];renderCal();break;}
     case "calToday":{calSel=today();const n=new Date();calM=[n.getFullYear(),n.getMonth()];renderCal();break;}

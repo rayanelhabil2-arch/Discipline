@@ -10,6 +10,9 @@ https://rayanelhabil2-arch.github.io/Discipline/ (GitHub Pages, rama `gh-pages`)
 
 ## Datos
 
+Con la **sincronización** activada (Metas → Sincronización, pegando la clave privada), todo se guarda también en Supabase, en la tabla `disciplina_state` (una fila por clave; solo se puede leer o cambiar enviando esa clave en la cabecera `x-disc-key`). Así Claude puede apuntar eventos del calendario o notas cuando se lo pides. La clave no está en el código: no la subas al repo.
+
+
 Todo se guarda en el navegador del móvil (`localStorage`, clave `panelVida.v1`). Para pasar los datos a otro móvil: **Metas → Copia de seguridad → Exportar** y luego **Importar** en el otro.
 
 ## Notificaciones
