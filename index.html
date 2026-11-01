@@ -163,7 +163,7 @@ svg text{font-family:Inter}
     <div class="big" id="sargeTxt"></div>
     <div class="stats">
       <div class="stat"><b id="st1">0</b><span id="st1l">días fin de bachi</span></div>
-      <div class="stat"><b id="st2">–</b><span>media trimestre</span></div>
+      <div class="stat"><b id="st2">0</b><span>🔥 días seguidos</span></div>
       <div class="stat"><b id="st3">0</b><span id="st3l">días Suiza</span></div>
     </div>
     <div class="warn" id="warn" style="display:none"></div>
@@ -615,11 +615,10 @@ function renderHoy(){
   const c=S.mission.countdowns;
   $("st1").textContent=c[0]?daysTo(c[0].date):"–"; $("st1l").textContent="días "+(c[0]?c[0].name:"");
   $("st3").textContent=c[1]?daysTo(c[1].date):"–"; $("st3l").textContent="días "+(c[1]?c[1].name:"");
-  const ts=triStats(curTri()); $("st2").textContent=ts.avg==null?"–":fmt(ts.avg);
+  $("st2").textContent=dayStreak();
   // aviso
   const w=$("warn"), msgs=[];
   if(key(ago(1))>=S.start&&!cumplido(ago(1))&&!cumplido(n)) msgs.push("⚠ Racha en peligro: ayer no cumpliste. Si hoy fallas, se rompe.");
-  if(ts.sus) msgs.push("⚠ "+ts.sus+" asignatura"+(ts.sus>1?"s":"")+" por debajo del 5 este trimestre. Mira Estudios.");
   w.style.display=msgs.length?"block":"none"; w.innerHTML=msgs.join("<br>");
   // score + rango
   const p=dayScore(n); $("spct").textContent=p+"%"; $("sarc").setAttribute("stroke-dashoffset",226.2*(1-p/100));
