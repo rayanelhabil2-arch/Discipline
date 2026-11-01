@@ -130,7 +130,7 @@ svg text{font-family:Inter}
 .money{font-family:var(--head);font-size:24px}
 /* nav */
 .tabs{position:fixed;left:0;right:0;bottom:0;padding:7px 2px calc(env(safe-area-inset-bottom) + 7px);background:rgba(13,13,14,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;justify-content:space-around;z-index:5}
-.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding:5px 2px;font-weight:700;flex:1}
+.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8.5px;letter-spacing:.02em;text-transform:uppercase;color:var(--mut);padding:5px 2px;font-weight:700;flex:1}
 .tabs button .i{font-size:19px;line-height:1.1}
 .tabs button.on{color:var(--red2)}
 .view{display:none}.view.on{display:block;animation:f .2s ease}
@@ -182,14 +182,6 @@ svg text{font-family:Inter}
   </div>
 
   <div class="card">
-    <div class="hd"><h2 id="calTitle">Calendario</h2><div class="row"><button class="btn sm" data-a="calPrev">‹</button><button class="btn sm" data-a="calToday">Hoy</button><button class="btn sm" data-a="calNext">›</button></div></div>
-    <div class="cal" id="cal"></div>
-    <div class="hd" style="margin:14px 0 4px"><span class="small" id="calDayT"></span><button class="lnk" data-a="evAdd">+ Añadir</button></div>
-    <div id="calDay"></div>
-    <div id="calNext" style="margin-top:10px"></div>
-  </div>
-
-  <div class="card">
     <div class="hd"><h2>Diario</h2><span class="small" id="dCount"></span></div>
     <div id="dailyHoy"></div>
   </div>
@@ -222,6 +214,20 @@ svg text{font-family:Inter}
   </div>
   <div id="objM" style="display:none">
     <div class="card"><div class="hd"><h2 id="mTitle">Este mes</h2><button class="lnk" data-a="addPer" data-p="m">+ Nuevo</button></div><div id="perM"></div></div>
+  </div>
+</section>
+
+<!-- ================= CALENDARIO ================= -->
+<section class="view" id="v-cal">
+  <div class="e">Fechas</div>
+  <h1>Calendario</h1>
+  <div class="sub">Médico, fiestas, exámenes… Lo que me digas, también lo apunto aquí.</div>
+  <div class="card">
+    <div class="hd"><h2 id="calTitle">Calendario</h2><div class="row"><button class="btn sm" data-a="calPrev">‹</button><button class="btn sm" data-a="calToday">Hoy</button><button class="btn sm" data-a="calNext">›</button></div></div>
+    <div class="cal" id="cal"></div>
+    <div class="hd" style="margin:14px 0 4px"><span class="small" id="calDayT"></span><button class="lnk" data-a="evAdd">+ Añadir</button></div>
+    <div id="calDay"></div>
+    <div id="calNext" style="margin-top:10px"></div>
   </div>
 </section>
 
@@ -338,6 +344,7 @@ svg text{font-family:Inter}
 <nav class="tabs" id="tabs">
   <button class="on" data-v="hoy"><span class="i">⚔</span>Hoy</button>
   <button data-v="obj"><span class="i">✓</span>Objetivos</button>
+  <button data-v="cal"><span class="i">📅</span>Fechas</button>
   <button data-v="est"><span class="i">✎</span>Estudios</button>
   <button data-v="gym"><span class="i">🏋</span>Gym</button>
   <button data-v="mot"><span class="i">🔥</span>Mente</button>
@@ -367,7 +374,7 @@ const AG_NO=AG_CL.concat([["17:00-20:00","Estudiar y deberes"],["20:00-21:30","T
 const AG_SAT=[["09:30","Levantarse"],["10:00-12:00","Estudio: adelantar y repasar"],["12:00-12:30","Duolingo francés y alemán"],["12:30-20:00","Libre"],["22:00-22:30","Leer (10 páginas)"],["00:00","A dormir"]];
 const AG_SUN=[["09:30","Levantarse"],["10:00-12:00","Estudio: preparar la semana"],["12:00-12:30","Duolingo francés y alemán"],["12:30-19:00","Libre"],["19:00-19:30","Repaso del domingo y plan de la semana"],["22:00-22:30","Leer y examen nocturno"],["23:00","A dormir"]];
 const DEF={
-  ver:6,
+  ver:7,
   habits:[
     {id:"rezo",em:"🕌",name:"Rezar las 5 oraciones",days:ALL,parts:["Fajr","Dhuhr","Asr","Maghrib","Isha"]},
     {id:"fr",em:"🇫🇷",name:"Duolingo francés",days:ALL},
@@ -406,17 +413,27 @@ const DEF={
     {id:"g5",name:"Trabajo de almacén (ETT)",cur:0,target:1,step:1,unit:""}],
   mission:{
     lines:[
-      "Cállales la boca a los que dijeron que repetirías 2º de bachillerato.",
-      "Te niegas a repetir. Demuéstralo hoy, no mañana.",
-      "Bachillerato, carnet, Suiza. En ese orden. Sin excusas.",
-      "Cada día que cumples estás un día más cerca de Suiza.",
-      "Nadie va a venir a hacerlo por ti.",
-      "Dentro de un año estarás en Suiza o arrepentido. Elige hoy.",
-      "El que se queja se queda. El que actúa se va.",
-      "Cansado también se puede. Hazlo cansado.",
-      "Haz lo que depende de ti. Lo demás, acéptalo.",
-      "La disciplina es libertad. La pereza es una cárcel.",
-      "No necesitas ganas. Necesitas empezar."],
+      "No seas como el resto de la familia. Tú vas a crear tu propio camino.",
+      "Rompe el ciclo. Lo que no hicieron ellos, lo vas a hacer tú.",
+      "Tu apellido no decide tu futuro. Lo deciden tus actos.",
+      "Ser uno más es fácil. Tú no naciste para ser uno más.",
+      "Nadie a tu alrededor lo ha hecho. Por eso lo vas a hacer tú.",
+      "Que tu familia vea de lo que eres capaz, no que se lo cuenten.",
+      "Los que dijeron que repetirías te están mirando. Que te vean aprobar.",
+      "No esperes a que alguien crea en ti. Créetelo tú y demuéstralo.",
+      "El camino fácil ya lo cogió todo el mundo. El tuyo lo construyes tú.",
+      "Dentro de un año estarás en Suiza o dando excusas. Tú eliges.",
+      "Tu yo de 2027 te espera en Suiza. No le hagas esperar.",
+      "Bachillerato, carnet, Suiza. Paso a paso, sin parar.",
+      "Lo que haces cuando nadie te ve es lo que vas a ser.",
+      "Si fuera fácil lo haría todo el mundo. Por eso casi nadie lo hace.",
+      "No estás cansado. Estás cómodo. Levántate.",
+      "El dolor de la disciplina pesa gramos. El del arrepentimiento, toneladas.",
+      "Disciplina hoy, libertad mañana.",
+      "Tú no te quejas. Tú actúas.",
+      "Cada día que cumples es un ladrillo de la vida que vas a tener.",
+      "Primero decide quién quieres ser. Después, hazlo. (Epicteto)"],
+
     steps:["Aprobar 2º de bachillerato","Sacarme el carnet","Irme a Suiza"],stepDone:[false,false,false],
     countdowns:[{id:"c1",name:"fin de bachi",date:"2027-06-01"},{id:"c2",name:"Suiza",date:"2027-07-01"}],
     why:["No voy a repetir 2º de bachillerato.","Quiero demostrar a los que dudaron de mí que se equivocaban.","Quiero mi carnet y mi propio coche.","Quiero irme a Suiza, trabajar, ahorrar y estudiar un ciclo."]
@@ -463,6 +480,11 @@ function merge(x){
   if(x.ver<6){ x=Object.assign({},x);
     if(Array.isArray(x.savings)){const tot=x.savings.reduce((a,b)=>a+(+b.cur||0),0);x.savings=[{id:"total",em:"💰",name:"Ahorrado total",cur:tot,target:5000}];}
     x.ver=6; }
+  if(x.ver<7){ x=Object.assign({},x);
+    // frases nuevas (si no las había cambiado él)
+    const OLD=["Cállales la boca a los que dijeron que repetirías 2º de bachillerato.","No necesitas ganas. Necesitas empezar."];
+    if(x.mission&&Array.isArray(x.mission.lines)&&x.mission.lines[0]===OLD[0]&&x.mission.lines[x.mission.lines.length-1]===OLD[1]){x.mission=Object.assign({},x.mission,{lines:DEF.mission.lines.slice()});}
+    x.ver=7; }
   const s=clone(DEF); Object.assign(s,x);
   if(!Array.isArray(s.dnotes)) s.dnotes=[];
   if(!Array.isArray(s.events)) s.events=[];

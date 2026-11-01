@@ -15,9 +15,10 @@ const LV = [1, 2, 3, 4, 5], GYM = [1, 2, 4, 5], FINDE = [0, 6];
 type Slot = { days: number[]; at: string; title: string; msgs: string[] };
 const SLOTS: Slot[] = [
   { days: LV, at: "07:00", title: "⚔ Arriba, soldado", msgs: [
-    "El día es tuyo si lo atacas primero. Sin móvil la primera hora.",
-    "Te niegas a repetir 2º. Demuéstralo hoy.",
-    "Nadie va a venir a hacerlo por ti. Levántate.",
+    "No seas como el resto de la familia. Hoy empiezas a crear tu camino.",
+    "Ser uno más es fácil. Tú no naciste para ser uno más. Arriba.",
+    "No estás cansado. Estás cómodo. Levántate.",
+    "Tu apellido no decide tu futuro. Lo deciden tus actos. Empieza.",
     "Primero decide quién quieres ser. Después, hazlo. (Epicteto)",
   ]},
   { days: LV, at: "15:30", title: "🇫🇷🇩🇪 Duolingo antes de ir a por tu hermana", msgs: [
@@ -29,10 +30,10 @@ const SLOTS: Slot[] = [
     "Batido y creatina. Sin esto no hay volumen.",
   ]},
   { days: LV, at: "17:00", title: "📚 A estudiar", msgs: [
-    "Los que dijeron que repetirías no van a estudiar por ti. Tú sí.",
-    "Deberes al día. Sin excusas.",
-    "Bachi, carnet, Suiza. En ese orden.",
-    "No necesitas ganas. Necesitas empezar.",
+    "Los que dijeron que repetirías te están mirando. Que te vean aprobar.",
+    "Rompe el ciclo. Lo que no hicieron ellos, lo vas a hacer tú. A estudiar.",
+    "Que tu familia vea de lo que eres capaz, no que se lo cuenten.",
+    "Si fuera fácil lo haría todo el mundo. Por eso casi nadie lo hace.",
   ]},
   { days: [3], at: "20:00", title: "🧠 Miércoles sin gym", msgs: [
     "¿Has terminado de estudiar? Si sí, descansa. Si no, termina.",
@@ -51,13 +52,15 @@ const SLOTS: Slot[] = [
   { days: [0, 1, 2, 3, 4], at: "22:30", title: "💀 Cierra el día", msgs: [
     "Marca lo que has hecho. Un fallo se perdona. Dos, no.",
     "Examen nocturno: ¿qué has hecho bien? ¿En qué has fallado?",
-    "Este día no volverá. ¿Lo has usado bien?",
+    "Lo que haces cuando nadie te ve es lo que vas a ser.",
+    "Cada día que cumples es un ladrillo de la vida que vas a tener.",
     "A las 23:00, a la cama. Mañana se vuelve a la guerra.",
   ]},
   { days: FINDE, at: "10:00", title: "⚔ Finde, pero no de vacaciones", msgs: [
     "Dos horas de estudio y el resto es tuyo.",
-    "Mientras otros duermen, tú adelantas.",
-    "El que se queja se queda. El que actúa se va.",
+    "Mientras otros duermen, tú adelantas. Por eso vas a llegar.",
+    "El camino fácil ya lo cogió todo el mundo. El tuyo lo construyes tú.",
+    "Dentro de un año estarás en Suiza o dando excusas. Tú eliges.",
   ]},
   { days: FINDE, at: "12:00", title: "🇫🇷🇩🇪 Duolingo", msgs: ["No rompas la racha. Francés y alemán."] },
   { days: [0], at: "19:00", title: "🗓️ Repaso del domingo", msgs: [
