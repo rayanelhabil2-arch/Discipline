@@ -273,7 +273,7 @@ svg text{font-family:Inter}
     <div id="gymChecks" style="margin-top:8px"></div>
   </div>
   <div class="card">
-    <div class="hd"><h2>Peso corporal</h2><button class="lnk" data-a="addWeight">+ Pesarme</button></div>
+    <div class="hd"><h2>Mi peso</h2><button class="btn sm red" data-a="addWeight">Actualizar</button></div>
     <div class="row between"><div><div class="small">Ahora</div><div class="money" id="wNow">–</div></div><div style="text-align:center"><div class="small">Ganado</div><div class="money ok" id="wGain">–</div></div><div style="text-align:right"><div class="small">Objetivo</div><div class="money gold" id="wTarget">–</div></div></div>
     <div id="wChart" style="margin-top:12px"></div>
     <div class="hint" id="wHint"></div>
@@ -823,11 +823,10 @@ function renderGym(){
   $("wTarget").textContent=S.gym.wTarget?fmt(S.gym.wTarget)+" kg":"–";
   $("wChart").innerHTML=W.length>1?chart(W):"";
   let hint="";
-  if(!W.length) hint="Pésate una vez por semana, mismo día y a la misma hora (en ayunas). Toca «+ Pesarme».";
+  if(!W.length) hint="Pon tu peso y cámbialo cuando te vuelvas a pesar. Toca «Actualizar».";
   else if(S.gym.wTarget&&last.kg<S.gym.wTarget) hint="Te faltan "+fmt(S.gym.wTarget-last.kg)+" kg para tu objetivo. Come, entrena, descansa.";
   else if(S.gym.wTarget) hint="✓ Has llegado a tu objetivo. Pon uno nuevo.";
-  const lw=last?Math.floor((new Date()-new Date(last.d+"T12:00"))/864e5):0;
-  if(last&&lw>=7) hint+=" Hace "+lw+" días que no te pesas.";
+  if(last) hint+=(hint?" · ":"")+"Actualizado el "+last.d.slice(5).split("-").reverse().join("/")+".";
   $("wHint").textContent=hint;
   // lifts
   $("lifts").innerHTML=S.gym.exercises.map(ex=>{const L=(S.gym.lifts[ex.id]||[]);const best=L.reduce((m,x)=>!m||x.kg>m.kg||(x.kg===m.kg&&x.reps>m.reps)?x:m,null);const lst=L[L.length-1];
@@ -1023,15 +1022,18 @@ function kcalAddSheet(){
 }
 function weightSheet(){
   const W=S.gym.weights.slice().sort((a,b)=>a.d<b.d?-1:1);
-  openSheet(`<h2>Peso corporal</h2>
-  <div class="row"><div style="flex:1"><label>Peso de hoy (kg)</label><input id="wk" type="number" inputmode="decimal" step="0.1"></div><div style="flex:1"><label>Fecha</label><input id="wd" type="date" value="${today()}"></div></div>
+  const last=W[W.length-1];
+  openSheet(`<h2>Mi peso</h2>
+  <label>Lo que pesas ahora (kg)</label><input id="wk" type="number" inputmode="decimal" step="0.1" value="${last?last.kg:""}">
   <label>Peso objetivo (kg)</label><input id="wt" type="number" inputmode="decimal" step="0.5" value="${S.gym.wTarget||""}">
-  ${W.length?`<label>Historial (toca para borrar)</label><div class="gr">${W.slice().reverse().map(x=>`<button data-wdel="${x.d}">${x.d.slice(5).split("-").reverse().join("/")}: ${fmt(x.kg)} kg ✕</button>`).join("")}</div>`:""}
+  <p class="hint">Cámbialo solo cuando te peses. Cada cambio queda guardado para ver tu evolución en la gráfica.</p>
+  ${W.length>1?`<label>Cambios anteriores (toca para borrar)</label><div class="gr">${W.slice().reverse().map(x=>`<button data-wdel="${x.d}">${x.d.slice(5).split("-").reverse().join("/")}: ${fmt(x.kg)} kg ✕</button>`).join("")}</div>`:""}
   ${footer(false)}`);
   document.querySelectorAll("[data-wdel]").forEach(b=>b.onclick=()=>{S.gym.weights=S.gym.weights.filter(x=>x.d!==b.dataset.wdel);save();renderGym();weightSheet();});
   wire(()=>{const kg=parseFloat($("wk").value.replace(",","."));const tg=parseFloat($("wt").value.replace(",","."));S.gym.wTarget=isNaN(tg)?null:tg;
-    if(!isNaN(kg)){const d=$("wd").value||today();S.gym.weights=S.gym.weights.filter(x=>x.d!==d);S.gym.weights.push({d,kg});}
-    save();closeSheet();renderGym();if(!isNaN(kg))toast("Peso apuntado: "+fmt(kg)+" kg");});
+    const changed=!isNaN(kg)&&(!last||kg!==last.kg);
+    if(changed){const d=today();S.gym.weights=S.gym.weights.filter(x=>x.d!==d);S.gym.weights.push({d,kg});}
+    save();closeSheet();renderGym();if(changed)toast(last&&kg>last.kg?"+"+fmt(kg-last.kg)+" kg. El volumen va.":"Peso actualizado: "+fmt(kg)+" kg");});
 }
 function exSheet(ex){
   const L=(S.gym.lifts[ex.id]=S.gym.lifts[ex.id]||[]);const best=L.reduce((m,x)=>!m||x.kg>m.kg?x:m,null);const last=L[L.length-1];
