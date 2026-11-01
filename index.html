@@ -106,6 +106,15 @@ textarea{resize:vertical;line-height:1.45}
 .ev{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}.ev:last-child{border-bottom:0}
 .ev .ic{font-size:20px;width:26px;text-align:center}
 .kind{font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;background:var(--line);margin-right:4px;letter-spacing:.05em}
+/* comida */
+.mac{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 4px}
+.mac .bar{margin:4px 0 2px;height:5px}
+.meal{border-top:1px solid var(--line);padding:10px 0 4px}
+.meal .mh{display:flex;justify-content:space-between;align-items:center}
+.fi{display:flex;justify-content:space-between;gap:8px;padding:6px 0;font-size:13px;cursor:pointer}
+.fi .fn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr{display:flex;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.fr:active{background:var(--card2)}
 /* gym */
 .lift{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.lift:last-child{border-bottom:0}
 .kc{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
@@ -266,10 +275,11 @@ svg text{font-family:Inter}
     <div id="gymTodayEx" style="margin-top:6px"></div>
   </div>
   <div class="card">
-    <div class="hd"><h2>Volumen de hoy</h2><button class="lnk" data-a="editKcal">Objetivo</button></div>
+    <div class="hd"><h2>Comida de hoy</h2><button class="lnk" data-a="kcalCalc">Mi objetivo</button></div>
     <div class="row between"><div><span class="money" id="kcalNow">0</span> <span class="small" id="kcalOf">kcal</span></div><span class="small" id="kcalLeft"></span></div>
     <div class="bar g"><i id="kcalBar"></i></div>
-    <div class="kc"><button class="btn sm" data-kc="100">+100</button><button class="btn sm" data-kc="250">+250</button><button class="btn sm" data-kc="500">+500</button><button class="btn sm" data-a="kcalCustom">+ otra</button><button class="btn sm" data-kc="-100">−100</button></div>
+    <div class="mac" id="macros"></div>
+    <div id="meals"></div>
     <div id="gymChecks" style="margin-top:8px"></div>
   </div>
   <div class="card">
@@ -437,7 +447,7 @@ const DEF={
     countdowns:[{id:"c1",name:"fin de bachi",date:"2027-06-01"},{id:"c2",name:"Suiza",date:"2027-07-01"}],
     why:["No voy a repetir 2º de bachillerato.","Quiero demostrar a los que dudaron de mí que se equivocaban.","Quiero mi carnet y mi propio coche.","Quiero irme a Suiza, trabajar, ahorrar y estudiar un ciclo."]
   },
-  log:{},prios:{},dnotes:[],events:[],agDone:{},focus:{},review:{},plog:{},prev:{},notes:""
+  log:{},prios:{},dnotes:[],events:[],food:{profile:{},target:{},log:{},mine:[]},agDone:{},focus:{},review:{},plog:{},prev:{},notes:""
 };
 const RANKS=[[0,"🪖","Recluta"],[3,"🛡️","Soldado"],[7,"🗡️","Hoplita"],[14,"⚔️","Guerrero"],[30,"🦅","Centurión"],[60,"🏛️","Legado"],[100,"🔱","Espartano"],[200,"👑","Leyenda"]];
 const QUOTES=[
@@ -487,6 +497,8 @@ function merge(x){
   const s=clone(DEF); Object.assign(s,x);
   if(!Array.isArray(s.dnotes)) s.dnotes=[];
   if(!Array.isArray(s.events)) s.events=[];
+  s.food=Object.assign({profile:{},target:{},log:{},mine:[]},s.food||{});
+  if(!s.food.target.kcal&&s.gym&&s.gym.kcalTarget) s.food.target.kcal=+s.gym.kcalTarget;
   if(!s.studies.crit) s.studies.crit={p:40,t:60,o:0};
   if(!s.start){const ks=Object.keys(s.log).sort();s.start=ks[0]&&ks[0]<today()?ks[0]:today();}
   if(s._extraHab){ s.habits=s.habits.concat(s._extraHab); delete s._extraHab; }
@@ -814,11 +826,17 @@ function renderGym(){
   $("routine").innerHTML=[1,2,3,4,5,6,0].filter(d=>gd.includes(d)).map(d=>{const L=plan[d]||[];
     return `<div class="goal" data-a="editSplit" data-d="${d}" style="cursor:pointer"><div class="row between"><span class="nm"><span style="color:var(--red2)">${DN[d].toUpperCase()}</span> · ${esc(sp[d]||"Sin poner")}</span>${d===dow?'<span class="small">hoy</span>':""}</div>
     <div class="small" style="margin-top:4px;line-height:1.6">${L.length?L.map(esc).join("<br>"):"Toca para añadir los ejercicios"}</div></div>`}).join("")||'<div class="hint">No tienes días de gym. Actívalos en el hábito «Gimnasio».</div>';
-  const t=today(),k=S.gym.kcal[t]||0,tg=+S.gym.kcalTarget||0;
+  const t=today(),FT=foodTotals(t),k=Math.round(FT.kcal),tg=+(S.food.target.kcal||S.gym.kcalTarget||0);
   $("kcalNow").textContent=k.toLocaleString("es-ES");
   $("kcalOf").textContent=tg?"/ "+tg.toLocaleString("es-ES")+" kcal":"kcal";
   $("kcalLeft").textContent=tg?(k>=tg?"✓ objetivo cumplido":"faltan "+(tg-k).toLocaleString("es-ES")):"pon tu objetivo →";
   $("kcalBar").style.width=(tg?Math.min(100,k/tg*100):0)+"%";
+  const T=S.food.target;
+  $("macros").innerHTML=[["Proteína","p",T.p],["Carbos","c",T.c],["Grasas","f",T.f]].map(([n,kk,tt])=>`<div><div class="small">${n}</div><div style="font-weight:700;font-size:13px">${Math.round(FT[kk])}${tt?" / "+tt:""} g</div><div class="bar ${tt&&FT[kk]>=tt?"g":""}"><i style="width:${tt?Math.min(100,FT[kk]/tt*100):0}%"></i></div></div>`).join("");
+  const L=(S.food.log[t]||[]);
+  $("meals").innerHTML=MEALS.map(([id,nm,ic])=>{const it=L.filter(x=>x.meal===id),kc=it.reduce((a,x)=>a+x.kcal,0);
+    return `<div class="meal"><div class="mh"><b>${ic} ${nm}</b><div class="row"><span class="small">${Math.round(kc)} kcal</span><button class="btn sm red" data-a="foodAdd" data-m="${id}">+</button></div></div>
+    ${it.map(x=>`<div class="fi" data-a="foodEdit" data-id="${x.id}"><span class="fn">${esc(x.name)} <span class="small">· ${x.g?fmt(x.g)+" g":"ración"}</span></span><span class="small">${Math.round(x.kcal)} kcal · ${fmt(Math.round(x.p))} P</span></div>`).join("")}</div>`}).join("")+(S.gym.kcal[t]?`<div class="small" style="margin-top:6px">+ ${S.gym.kcal[t]} kcal sueltas apuntadas antes</div>`:"");
   $("gymChecks").innerHTML=["batido","creatina"].map(id=>S.habits.find(h=>h.id===id)).filter(Boolean).map(h=>habRow(h,t,false)).join("");
   // peso
   const W=S.gym.weights.slice().sort((a,b)=>a.d<b.d?-1:1);
@@ -912,7 +930,9 @@ document.addEventListener("click",e=>{
     case "editSplit": splitSheet(b.dataset.d!=null?+b.dataset.d:null); break;
     case "exChk":{const t=today();S.gym.done=S.gym.done||{};S.gym.done[t]=S.gym.done[t]||{};S.gym.done[t][b.dataset.i]=!S.gym.done[t][b.dataset.i];save();renderGym();
       const L=(S.gym.plan||{})[new Date().getDay()]||[];if(L.length&&L.every((e,i)=>S.gym.done[t][i]))toast("🏋️ Rutina completada. Bestia.");break;}
-    case "editKcal": kcalSheet(); break;
+    case "editKcal": case "kcalCalc": calcSheet(); break;
+    case "foodAdd": foodSheet(b.dataset.m); break;
+    case "foodEdit":{const x=(S.food.log[today()]||[]).find(y=>y.id===b.dataset.id);if(x)portionSheet(x,x.meal,x);break;}
     case "kcalCustom": kcalAddSheet(); break;
     case "addWeight": weightSheet(); break;
     case "openEx": exSheet(S.gym.exercises.find(x=>x.id===b.dataset.x)); break;
@@ -1021,6 +1041,108 @@ function splitSheet(day){
   const commit=()=>{S.gym.split[day]=val("rt");S.gym.plan[day]=$("rx").value.split("\n").map(x=>x.trim()).filter(Boolean);};
   $("rd").onclick=e=>{const b=e.target.closest("[data-d]");if(!b)return;commit();save();splitSheet(+b.dataset.d);};
   wire(()=>{commit();save();closeSheet();renderGym();renderHoy();toast("Rutina guardada");});
+}
+// ================= COMIDA (tipo Yazio) =================
+const MEALS=[["des","Desayuno","🍳"],["com","Comida","🍗"],["mer","Merienda","🥤"],["cen","Cena","🍝"],["snk","Snacks","🥜"]];
+// valores por 100 g (aprox., tablas habituales); u = gramos de una unidad/ración
+const BASIC=[
+ ["Pechuga de pollo (cruda)",120,23,0,2.6],["Pechuga de pavo (cruda)",112,24,0,1.5],["Ternera magra (cruda)",150,21,0,7],["Carne picada mixta",250,17,0,20],
+ ["Salmón",208,20,0,13],["Atún en lata al natural",110,25,0,1],["Huevo",143,12.6,0.7,9.5,60],["Claras de huevo",52,11,0.7,0.2],
+ ["Arroz blanco (crudo)",360,7,79,0.6],["Arroz cocido",130,2.7,28,0.3],["Pasta (cruda)",360,13,72,1.5],["Pasta cocida",158,5.8,31,0.9],
+ ["Avena",375,13,60,7,40],["Pan blanco",265,9,49,3.2,40],["Pan integral",247,13,41,3.4,40],["Patata (cruda)",77,2,17,0.1],["Boniato (crudo)",86,1.6,20,0.1],
+ ["Lentejas cocidas",116,9,20,0.4],["Garbanzos cocidos",164,8.9,27,2.6],
+ ["Leche entera",64,3.2,4.7,3.6,250],["Leche semidesnatada",46,3.3,4.8,1.6,250],["Yogur natural",61,3.5,4.7,3.3,125],["Yogur proteico",60,10,4,0.2,125],
+ ["Queso fresco batido 0%",46,8,3.5,0.1],["Queso semicurado",380,25,1,31,30],
+ ["Plátano",89,1.1,23,0.3,120],["Manzana",52,0.3,14,0.2,180],["Naranja",47,0.9,12,0.1,150],
+ ["Aceite de oliva",884,0,0,100,10],["Nueces",654,15,14,65,30],["Almendras",579,21,22,50,30],["Crema de cacahuete",588,25,20,50,15],
+ ["Proteína whey (polvo)",380,78,8,5,30],["Pizza",266,11,33,10],["Kebab (durum)",215,11,20,10,400]
+].map(([n,kcal,p,c,f,u])=>({name:n,kcal,p,c,f,u:u||100,basic:true}));
+function foodTotals(k){const L=S.food.log[k]||[];const o={kcal:(S.gym.kcal[k]||0),p:0,c:0,f:0};L.forEach(x=>{o.kcal+=x.kcal;o.p+=x.p;o.c+=x.c;o.f+=x.f;});return o;}
+let offT=null,offSeq=0;
+function foodSheet(meal){
+  const mn=MEALS.find(m=>m[0]===meal)[1];
+  openSheet(`<h2>Añadir a ${mn}</h2>
+  <input id="fq" placeholder="Busca: pollo, avena, yogur Mercadona…" autocomplete="off" style="margin-top:10px">
+  <div id="fres" style="margin-top:6px;max-height:52vh;overflow:auto"></div>
+  <div class="row" style="margin-top:12px;justify-content:space-between"><button class="btn sm" id="fman">Añadir a mano</button><button class="btn" id="xCan">Cerrar</button></div>`);
+  $("xCan").onclick=closeSheet;
+  $("fman").onclick=()=>manualFood(meal);
+  const row=(f,i)=>`<div class="fr" data-fi="${i}"><div style="min-width:0"><div style="font-weight:600">${esc(f.name)}</div><div class="small">${f.brand?esc(f.brand)+" · ":""}${Math.round(f.kcal)} kcal · ${fmt(Math.round(f.p*10)/10)} g prot. /100 g</div></div><span style="color:var(--red2);font-weight:800">+</span></div>`;
+  let list=[];
+  const show=(local,remote,msg)=>{if(!$("fres")||!$("fq"))return;list=local.concat(remote);$("fres").innerHTML=(local.length?'<div class="small" style="margin:4px 0">'+($("fq").value.trim()?"BÁSICOS Y RECIENTES":"RECIENTES Y BÁSICOS")+'</div>':"")+local.map(row).join("")+(msg?`<div class="small" style="margin:10px 0 4px">${msg}</div>`:"")+remote.map((f,i)=>row(f,local.length+i)).join("");};
+  const localFor=q=>{const n=q.toLowerCase();const pool=S.food.mine.concat(BASIC.filter(b=>!S.food.mine.some(m=>m.name===b.name)));return (n?pool.filter(f=>f.name.toLowerCase().includes(n)):pool).slice(0,n?8:14);};
+  show(localFor(""),[]);
+  $("fres").onclick=e=>{const r=e.target.closest("[data-fi]");if(r)portionSheet(list[+r.dataset.fi],meal,null);};
+  $("fq").oninput=()=>{const q=$("fq").value.trim();show(localFor(q),[],q.length>=3?"Buscando en Open Food Facts…":"");clearTimeout(offT);
+    if(q.length<3)return; const my=++offSeq;
+    offT=setTimeout(async()=>{try{
+      const r=await fetch("https://es.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(q)+"&search_simple=1&json=1&page_size=25&fields=product_name,brands,nutriments,serving_quantity");
+      const j=await r.json(); if(my!==offSeq)return;
+      const rem=(j.products||[]).map(x=>{const n=x.nutriments||{};return {name:x.product_name||"",brand:(x.brands||"").split(",")[0],kcal:+n["energy-kcal_100g"]||(+n["energy_100g"]||0)/4.184,p:+n.proteins_100g||0,c:+n.carbohydrates_100g||0,f:+n.fat_100g||0,u:+x.serving_quantity||100};}).filter(x=>x.name&&x.kcal>0);
+      show(localFor(q),rem,rem.length?"OPEN FOOD FACTS":"No he encontrado nada más. Prueba otra palabra o añádelo a mano.");
+    }catch(e){if(my===offSeq)show(localFor(q),[],"Sin conexión: solo básicos y recientes.");}},500);};
+  setTimeout(()=>{const q=$("fq");if(q)q.focus();},50);
+}
+function portionSheet(f,meal,existing){
+  const g0=existing?existing.g:(f.u||100);
+  const per=existing?existing.per:{kcal:f.kcal,p:f.p,c:f.c,f:f.f};
+  openSheet(`<h2>${esc(f.name)}</h2>${f.brand?`<div class="small">${esc(f.brand)}</div>`:""}
+  <label>Cantidad (gramos)</label><input id="pg" type="number" inputmode="decimal" value="${g0}">
+  <div class="dseg" style="margin-top:8px">${[f.u&&f.u!==100?f.u:null,50,100,150,200].filter((v,i,a)=>v&&a.indexOf(v)===i).map(v=>`<button data-g="${v}">${v} g${f.u===v&&v!==100?" (1 ud.)":""}</button>`).join("")}</div>
+  <div class="mac" id="pv" style="grid-template-columns:repeat(4,1fr)"></div>
+  <label>Comida</label><div class="dseg" id="pm">${MEALS.map(([id,nm])=>`<button data-m="${id}" class="${id===meal?"on":""}">${nm}</button>`).join("")}</div>
+  ${footer(!!existing)}`);
+  const calc=()=>{const g=parseFloat($("pg").value.replace(",","."))||0,k=g/100;return {g,kcal:per.kcal*k,p:per.p*k,c:per.c*k,f:per.f*k};};
+  const upd=()=>{const v=calc();$("pv").innerHTML=[["kcal",Math.round(v.kcal)],["Prot.",fmt(Math.round(v.p*10)/10)+" g"],["Carb.",fmt(Math.round(v.c))+" g"],["Grasa",fmt(Math.round(v.f))+" g"]].map(([a,b])=>`<div><div class="small">${a}</div><b>${b}</b></div>`).join("");};
+  $("pg").oninput=upd; upd();
+  document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{$("pg").value=b.dataset.g;upd();});
+  $("pm").onclick=e=>{const b=e.target.closest("[data-m]");if(!b)return;$("pm").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));};
+  wire(()=>{const v=calc();if(!v.g)return;const t=today(),m=($("pm").querySelector(".on")||{dataset:{m:meal}}).dataset.m;
+    S.food.log[t]=S.food.log[t]||[];
+    if(existing) Object.assign(existing,v,{meal:m});
+    else S.food.log[t].push(Object.assign({id:"f"+Date.now(),name:f.name,meal:m,per},v));
+    // recientes
+    S.food.mine=[{name:f.name,brand:f.brand||"",kcal:per.kcal,p:per.p,c:per.c,f:per.f,u:f.u||100}].concat(S.food.mine.filter(x=>x.name!==f.name)).slice(0,30);
+    save();closeSheet();renderGym();
+    const tg=+S.food.target.kcal||0,tot=foodTotals(t).kcal;if(tg&&tot>=tg&&tot-v.kcal<tg)toast("🍗 Objetivo de calorías cumplido. Así se hace volumen.");},
+    ()=>{S.food.log[today()]=(S.food.log[today()]||[]).filter(x=>x!==existing);save();closeSheet();renderGym();});
+}
+function manualFood(meal){
+  openSheet(`<h2>Añadir a mano</h2><p class="hint">Pon los valores por 100 g (vienen en la etiqueta).</p>
+  <label>Nombre</label><input id="mn" placeholder="p. ej. Bocadillo de tortilla">
+  <div class="row"><div style="flex:1"><label>kcal /100 g</label><input id="mk" type="number" inputmode="decimal"></div><div style="flex:1"><label>Proteína</label><input id="mp" type="number" inputmode="decimal" value="0"></div></div>
+  <div class="row"><div style="flex:1"><label>Carbos</label><input id="mc" type="number" inputmode="decimal" value="0"></div><div style="flex:1"><label>Grasas</label><input id="mf" type="number" inputmode="decimal" value="0"></div></div>
+  ${footer(false)}`);
+  wire(()=>{const n=val("mn"),k=+$("mk").value;if(!n||!k)return;portionSheet({name:n,kcal:k,p:+$("mp").value||0,c:+$("mc").value||0,f:+$("mf").value||0,u:100},meal,null);});
+}
+function calcSheet(){
+  const P=S.food.profile, W=S.gym.weights.slice().sort((a,b)=>a.d<b.d?-1:1), lastW=W.length?W[W.length-1].kg:"";
+  const ACT=[["1.2","Sedentario (casi sin moverme)"],["1.375","Ligero (1–2 entrenos/semana)"],["1.55","Moderado (3–5 entrenos/semana)"],["1.725","Muy activo (6–7 entrenos o trabajo físico)"]];
+  const GOAL=[["0","Mantener"],["300","Volumen limpio (+300)"],["500","Volumen (+500)"]];
+  openSheet(`<h2>Calcular mi objetivo</h2>
+  <label>Sexo</label><div class="dseg" id="cs"><button data-v="h" class="${P.sex!=="m"?"on":""}">Hombre</button><button data-v="m" class="${P.sex==="m"?"on":""}">Mujer</button></div>
+  <div class="row"><div style="flex:1"><label>Edad</label><input id="ca" type="number" inputmode="numeric" value="${P.age||""}"></div><div style="flex:1"><label>Altura (cm)</label><input id="ch" type="number" inputmode="numeric" value="${P.h||""}"></div><div style="flex:1"><label>Peso (kg)</label><input id="cw" type="number" inputmode="decimal" value="${lastW||P.w||""}"></div></div>
+  <label>Actividad</label><select id="cact">${ACT.map(([v,l])=>`<option value="${v}" ${String(P.act||"1.55")===v?"selected":""}>${l}</option>`).join("")}</select>
+  <label>Objetivo</label><select id="cg">${GOAL.map(([v,l])=>`<option value="${v}" ${String(P.goal??"300")===v?"selected":""}>${l}</option>`).join("")}</select>
+  <div class="card" id="cres" style="margin-top:14px"></div>
+  <label>O pon tu objetivo a mano (kcal)</label><input id="cman" type="number" inputmode="numeric" value="${S.food.target.kcal||""}">
+  ${footer(false)}`);
+  $("cs").onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;$("cs").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));res();};
+  let R=null;
+  const res=()=>{const sex=($("cs").querySelector(".on")||{dataset:{v:"h"}}).dataset.v,a=+$("ca").value,h=+$("ch").value,w=parseFloat(($("cw").value||"").replace(",","."));
+    if(!a||!h||!w){$("cres").innerHTML='<div class="hint">Rellena edad, altura y peso y te calculo las calorías y los macros (fórmula Mifflin-St Jeor).</div>';R=null;return;}
+    const bmr=10*w+6.25*h-5*a+(sex==="h"?5:-161),tdee=bmr*+$("cact").value,kcal=Math.round((tdee+ +$("cg").value)/10)*10;
+    const p=Math.round(2*w),f=Math.round(1*w),c=Math.max(0,Math.round((kcal-p*4-f*9)/4));
+    R={kcal,p,c,f,prof:{sex,age:a,h,w,act:$("cact").value,goal:$("cg").value}};
+    $("cres").innerHTML=`<div class="small">Gastas unas ${Math.round(tdee)} kcal al día</div><div class="big" style="font-size:36px;color:var(--ok)">${kcal} kcal</div>
+    <div class="small">Proteína <b>${p} g</b> · Carbos <b>${c} g</b> · Grasas <b>${f} g</b></div>
+    <p class="hint" style="margin:8px 0 0">Es una estimación. Si en 2–3 semanas tu peso no sube, súmale 200 kcal.</p>`;
+    $("cman").value=kcal;};
+  ["ca","ch","cw","cact","cg"].forEach(id=>$(id).addEventListener("input",res));["cact","cg"].forEach(id=>$(id).addEventListener("change",res));res();
+  wire(()=>{const man=+$("cman").value;
+    if(R&&man===R.kcal){S.food.target={kcal:R.kcal,p:R.p,c:R.c,f:R.f};S.food.profile=R.prof;}
+    else if(man){const w=R?R.prof.w:(lastW||70);const p=Math.round(2*w),f=Math.round(w);S.food.target={kcal:man,p,f,c:Math.max(0,Math.round((man-p*4-f*9)/4))};if(R)S.food.profile=R.prof;}
+    save();closeSheet();renderGym();toast("Objetivo: "+S.food.target.kcal+" kcal al día");});
 }
 function kcalSheet(){
   openSheet(`<h2>Objetivo de calorías</h2><label>Calorías al día</label><input id="kt" type="number" inputmode="numeric" value="${S.gym.kcalTarget||""}" placeholder="p. ej. 2800">
