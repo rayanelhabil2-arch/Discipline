@@ -93,6 +93,19 @@ textarea{resize:vertical;line-height:1.45}
 .gr button{font-size:12px;padding:5px 9px;border-radius:8px;background:var(--card2);border:1px solid var(--line);font-weight:600}
 .avg{font-family:var(--head);font-size:26px;line-height:1}
 .need{font-size:12px;margin-top:6px;font-weight:600}
+/* calendario */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal .h{font-size:10px;color:var(--mut);font-weight:700;padding-bottom:2px}
+.cal button{aspect-ratio:1;border-radius:8px;background:var(--card2);font-size:13px;font-weight:600;position:relative;padding:0}
+.cal button.out{opacity:.25}
+.cal button.td{outline:2px solid var(--red)}
+.cal button.sel{background:var(--red);color:#fff}
+.cal button i{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);display:flex;gap:2px}
+.cal button i b{width:5px;height:5px;border-radius:50%;background:var(--red2)}
+.cal button.sel i b{background:#fff}
+.ev{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}.ev:last-child{border-bottom:0}
+.ev .ic{font-size:20px;width:26px;text-align:center}
+.kind{font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;background:var(--line);margin-right:4px;letter-spacing:.05em}
 /* gym */
 .lift{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.lift:last-child{border-bottom:0}
 .kc{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
@@ -177,6 +190,14 @@ svg text{font-family:Inter}
   </div>
 
   <div class="card">
+    <div class="hd"><h2 id="calTitle">Calendario</h2><div class="row"><button class="btn sm" data-a="calPrev">‹</button><button class="btn sm" data-a="calToday">Hoy</button><button class="btn sm" data-a="calNext">›</button></div></div>
+    <div class="cal" id="cal"></div>
+    <div class="hd" style="margin:14px 0 4px"><span class="small" id="calDayT"></span><button class="lnk" data-a="evAdd">+ Añadir</button></div>
+    <div id="calDay"></div>
+    <div id="calNext" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
     <div class="hd"><h2>Diario</h2><span class="small" id="dCount"></span></div>
     <div id="dailyHoy"></div>
   </div>
@@ -220,13 +241,14 @@ svg text{font-family:Inter}
   <div class="card">
     <div class="row between">
       <div><div class="small">Media</div><div class="avg" id="triAvg">–</div></div>
-      <div style="text-align:right"><div class="small">Suspensas</div><div class="avg" id="triSus">0</div></div>
+      <div style="text-align:right"><div class="small">En riesgo</div><div class="avg" id="triSus">0</div></div>
       <div style="text-align:right"><div class="small">Objetivo</div><div class="avg gold" id="triObj">6</div></div>
     </div>
     <div class="warn" id="triMsg" style="display:none"></div>
   </div>
+  <div class="card" id="examCard" style="display:none"><div class="hd"><h2>Próximos exámenes</h2><span class="small">del calendario</span></div><div id="examList"></div></div>
   <div class="card"><div class="hd"><h2>Asignaturas</h2><button class="lnk" data-a="addSubj">+ Asignatura</button></div><div id="subjects"></div></div>
-  <p class="hint">Toca «+ nota» para apuntar un examen (con su peso si cuenta más). Toca una nota para cambiarla o borrarla. Toca el nombre de la asignatura para editar su objetivo.</p>
+  <p class="hint">Toca «+ nota» y elige si es un <b>parcial</b>, el <b>trimestral</b> u <b>otros</b> (trabajos, deberes). Con los parciales te calculo qué necesitas en el trimestral. Toca el nombre de la asignatura para cambiar cuánto cuenta cada parte.</p>
 
   <div class="card">
     <div class="hd"><h2>Sesión de estudio</h2><span class="small" id="fToday"></span></div>
@@ -309,6 +331,9 @@ svg text{font-family:Inter}
     <p class="hint">El sargento te manda una frase a las 8:00, 15:00, 18:00, 21:00 y 23:00, aunque tengas la app cerrada.</p>
     <div class="row wrapf"><button class="btn sm red" data-a="notifOn">Activar notificaciones</button></div>
   </div>
+  <div class="card"><div class="hd"><h2>Sincronización</h2><span class="small" id="syncState"></span></div>
+    <p class="hint" id="syncHint"></p>
+  </div>
   <div class="card"><div class="hd"><h2>Copia de seguridad</h2></div>
     <p class="hint">Para pasar tus datos a otro móvil o a otra versión de la app.</p>
     <div class="row wrapf"><button class="btn sm" data-a="exportData">Exportar mis datos</button><button class="btn sm" data-a="importData">Importar datos</button></div>
@@ -371,7 +396,7 @@ const DEF={
        {id:"repmes",em:"🧭",name:"Repaso del mes",type:"check",review:["¿Qué he logrado este mes?","¿Qué tengo que mejorar?","Objetivo principal del mes que viene"]}]
   },
   agenda:{0:AG_SUN,1:AG_GYM,2:AG_GYM,3:AG_NO,4:AG_GYM,5:AG_GYM,6:AG_SAT},
-  studies:{target:6,subjects:[
+  studies:{target:6,crit:{p:40,t:60,o:0},subjects:[
     {id:"mat",name:"Matemáticas CCSS II"},{id:"emp",name:"Empresa y diseño de modelos de negocio"},{id:"geo",name:"Geografía"},
     {id:"his",name:"Historia"},{id:"fil",name:"Historia de la Filosofía"},{id:"cas",name:"Lengua castellana"},
     {id:"cat",name:"Lengua catalana"},{id:"ing",name:"Inglés"}],
@@ -405,7 +430,7 @@ const DEF={
     countdowns:[{id:"c1",name:"fin de bachi",date:"2027-06-01"},{id:"c2",name:"Suiza",date:"2027-07-01"}],
     why:["No voy a repetir 2º de bachillerato.","Quiero demostrar a los que dudaron de mí que se equivocaban.","Quiero mi carnet y mi propio coche.","Quiero irme a Suiza, trabajar, ahorrar y estudiar un ciclo."]
   },
-  log:{},prios:{},dnotes:[],agDone:{},focus:{},review:{},plog:{},prev:{},notes:""
+  log:{},prios:{},dnotes:[],events:[],agDone:{},focus:{},review:{},plog:{},prev:{},notes:""
 };
 const RANKS=[[0,"🪖","Recluta"],[3,"🛡️","Soldado"],[7,"🗡️","Hoplita"],[14,"⚔️","Guerrero"],[30,"🦅","Centurión"],[60,"🏛️","Legado"],[100,"🔱","Espartano"],[200,"👑","Leyenda"]];
 const QUOTES=[
@@ -440,6 +465,8 @@ function merge(x){
     if(Array.isArray(x.habits)){const h=x.habits.find(h=>h.id==="sue");if(h&&h.name==="Dormir antes de las 00:00")h.name="A la cama a la hora (23:00 entre semana)";} }
   const s=clone(DEF); Object.assign(s,x);
   if(!Array.isArray(s.dnotes)) s.dnotes=[];
+  if(!Array.isArray(s.events)) s.events=[];
+  if(!s.studies.crit) s.studies.crit={p:40,t:60,o:0};
   if(!s.start){const ks=Object.keys(s.log).sort();s.start=ks[0]&&ks[0]<today()?ks[0]:today();}
   if(s._extraHab){ s.habits=s.habits.concat(s._extraHab); delete s._extraHab; }
   ["log","prios","agDone","focus","review","plog","prev","agenda"].forEach(k=>{if(!s[k]||typeof s[k]!=="object")s[k]=clone(DEF[k]);});
@@ -447,24 +474,49 @@ function merge(x){
   return s;
 }
 try{const l=localStorage.getItem(LS); if(l) S=merge(JSON.parse(l));}catch(e){}
-let dbRef=null,saveT=null;
+// ---- sincronización con Supabase (clave privada que llega con el enlace #k=...) ----
+const SB_URL="https://dffavtchgwwrepunyids.supabase.co";
+const SB_KEY="sb_publishable_07Pc-ZT16chbdMX_pCzvKg_v_VIiL2z";
+let SYNC_KEY=null; try{SYNC_KEY=localStorage.getItem("disc.key");}catch(e){}
+(function(){const m=location.hash.match(/k=([A-Za-z0-9_-]{24,})/);if(m){SYNC_KEY=m[1];try{localStorage.setItem("disc.key",SYNC_KEY);}catch(e){}history.replaceState(null,"",location.pathname);}})();
+const sbH=()=>({apikey:SB_KEY,"x-disc-key":SYNC_KEY,"Content-Type":"application/json"});
+let saveT=null,pushing=false;
 function save(){
+  S._savedAt=Date.now();
   try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}
-  if(!dbRef) return;
-  clearTimeout(saveT);
-  saveT=setTimeout(async()=>{try{await dbRef.set({json:JSON.stringify(S),at:Date.now()});setSync("guardado ✓");}catch(e){setSync("en este móvil");}},700);
+  if(!SYNC_KEY) return;
+  clearTimeout(saveT); saveT=setTimeout(pushRemote,900);
 }
-function setSync(t){$("sync").textContent=t;}
-(async()=>{
+async function pushRemote(){
+  if(!SYNC_KEY) return;
   try{
-    const db=await claude.use("db"),user=await claude.use("user");
-    if(!db||!user){setSync("en este móvil");return;}
-    const id=await user.id(),ref=db.doc("data/users/"+id+"/panel");
-    const snap=await ref.get(),d=snap&&typeof snap.data==="function"?snap.data():snap;
-    if(d&&d.json) S=merge(JSON.parse(d.json));
-    dbRef=ref;setSync("sincronizado ✓");save();renderAll();
-  }catch(e){setSync("en este móvil");}
-})();
+    pushing=true;
+    const r=await fetch(SB_URL+"/rest/v1/disciplina_state?on_conflict=owner_key",{method:"POST",headers:Object.assign(sbH(),{Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify({owner_key:SYNC_KEY,data:S,updated_at:new Date(S._savedAt||Date.now()).toISOString()})});
+    setSync(r.ok?"sincronizado ✓":"sin conexión");
+  }catch(e){setSync("sin conexión");}
+  pushing=false;
+}
+async function pullRemote(){
+  if(!SYNC_KEY){setSync("en este móvil");return;}
+  try{
+    const r=await fetch(SB_URL+"/rest/v1/disciplina_state?select=data,updated_at",{headers:sbH()});
+    const rows=await r.json(); const row=rows&&rows[0];
+    const remoteT=row?Date.parse(row.updated_at):0, localT=S._savedAt||0;
+    if(row&&row.data&&row.data.ver&&remoteT>localT+1000){
+      S=merge(row.data); S._savedAt=remoteT;
+      try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}
+      renderAll(); setSync("sincronizado ✓");
+    } else if(!row||!row.data||!row.data.ver||localT>remoteT+1000){ await pushRemote(); }
+    else setSync("sincronizado ✓");
+  }catch(e){setSync("sin conexión");}
+}
+function setSync(t){$("sync").textContent=t;try{renderSyncCard();}catch(e){}}
+function renderSyncCard(){
+  $("syncState").textContent=SYNC_KEY?"activa ✓":"desactivada";
+  $("syncHint").textContent=SYNC_KEY?"Tus datos se guardan en tu cuenta privada. Así Claude puede apuntarte cosas en el calendario o tus notas cuando se lo digas, y no pierdes nada si cambias de móvil.":"Ábrela una vez con el enlace privado que te dio Claude para activarla.";
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")pullRemote();});
+setTimeout(pullRemote,300);
 let toastT;function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove("on"),2800);}
 
 // ================= CÁLCULOS =================
@@ -507,15 +559,23 @@ const daysTo=s=>{const d=new Date(s+"T00:00:00");return Math.max(0,Math.ceil((d-
 // ---- estudios ----
 function subjGrades(t,sid){return ((S.studies.grades[t]||{})[sid])||[];}
 function wavg(list){let s=0,w=0;list.forEach(g=>{const ww=+g.w||1;s+=(+g.v)*ww;w+=ww;});return w?s/w:null;}
+const gKind=g=>g.k||"p";
+const critOf=s=>Object.assign({},S.studies.crit||{p:40,t:60,o:0},s.crit||{});
+function comps(t,sid){const L=subjGrades(t,sid);return {P:wavg(L.filter(g=>gKind(g)==="p")),T:wavg(L.filter(g=>gKind(g)==="t")),O:wavg(L.filter(g=>gKind(g)==="o"))};}
 function subjAvg(t,sid){
-  if(t==="f"){const a=["1","2","3"].map(x=>wavg(subjGrades(x,sid))).filter(x=>x!=null);return a.length?a.reduce((p,c)=>p+c,0)/a.length:null;}
-  return wavg(subjGrades(t,sid));
+  if(t==="f"){const a=["1","2","3"].map(x=>subjAvg(x,sid)).filter(x=>x!=null);return a.length?a.reduce((p,c)=>p+c,0)/a.length:null;}
+  const s=S.studies.subjects.find(x=>x.id===sid)||{},c=critOf(s),v=comps(t,sid);
+  let num=0,den=0;[["P","p"],["T","t"],["O","o"]].forEach(([K,k])=>{if(v[K]!=null&&+c[k]>0){num+=v[K]*c[k];den+=+c[k];}});
+  if(!den){const all=wavg(subjGrades(t,sid));return all;}
+  return num/den;
 }
 const subjTarget=s=>s.target!=null&&s.target!==""?+s.target:+S.studies.target;
-function needed(t,s){
-  const L=subjGrades(t,s.id); if(!L.length) return null;
-  let sum=0,w=0;L.forEach(g=>{const ww=+g.w||1;sum+=g.v*ww;w+=ww;});
-  return (subjTarget(s)*(w+1)-sum);
+// nota que hace falta en el trimestral para llegar a "goal"
+function needTrim(t,s,goal){
+  const c=critOf(s),v=comps(t,s.id);
+  if(v.T!=null||!(+c.t>0)||v.P==null) return null;
+  const tot=(+c.p||0)+(+c.t)+(+c.o||0), O=v.O!=null?v.O:v.P;
+  return (goal*tot-(+c.p||0)*v.P-(+c.o||0)*O)/(+c.t);
 }
 function triStats(t){
   const avgs=S.studies.subjects.map(s=>subjAvg(t,s.id)).filter(x=>x!=null);
@@ -551,7 +611,7 @@ function renderHoy(){
   // aviso
   const w=$("warn"), msgs=[];
   if(key(ago(1))>=S.start&&!cumplido(ago(1))&&!cumplido(n)) msgs.push("⚠ Racha en peligro: ayer no cumpliste. Si hoy fallas, se rompe.");
-  if(ts.sus) msgs.push("⚠ Llevas "+ts.sus+" asignatura"+(ts.sus>1?"s":"")+" suspendida"+(ts.sus>1?"s":"")+" este trimestre. Mira Estudios.");
+  if(ts.sus) msgs.push("⚠ "+ts.sus+" asignatura"+(ts.sus>1?"s":"")+" por debajo del 5 este trimestre. Mira Estudios.");
   w.style.display=msgs.length?"block":"none"; w.innerHTML=msgs.join("<br>");
   // score + rango
   const p=dayScore(n); $("spct").textContent=p+"%"; $("sarc").setAttribute("stroke-dashoffset",226.2*(1-p/100));
@@ -560,7 +620,7 @@ function renderHoy(){
   $("rkTxt").textContent=st+" días cumplidos seguidos"+(nx?" · "+(nx[0]-st)+" para "+nx[2]:"");
   $("rkBar").style.width=(nx?Math.min(100,(st-r[0])/(nx[0]-r[0])*100):100)+"%";
   // prioridades
-  renderNotes();
+  renderNotes(); renderCal();
   // diario
   const hs=habFor(dow);
   $("dailyHoy").innerHTML=hs.map(x=>habRow(x,t,false)).join("")||'<div class="hint">Hoy no toca nada.</div>';
@@ -578,6 +638,39 @@ function renderNotes(){
   $("nCount").textContent=L.length?L.filter(n=>n.d).length+" / "+L.length:"";
   const nx=S.dnotes.filter(n=>n.date>t&&!n.d).sort((a,b)=>a.date<b.date?-1:1);
   $("dnext").innerHTML=nx.length?'<div class="small" style="margin-bottom:4px">PRÓXIMOS</div>'+nx.map(n=>`<div class="task"><span class="t" style="width:46px">${n.date.slice(5).split("-").reverse().join("/")}</span><div class="l nm">${esc(n.t)}${n.time?' <span class="small">· '+esc(n.time)+'</span>':""}</div><button class="lnk" data-a="noteDel" data-id="${n.id}" style="color:var(--mut)">✕</button></div>`).join(""):"";
+}
+// ---- calendario ----
+const EVT={medico:["🩺","Médico"],clase:["🎉","Fiesta / clase"],examen:["📝","Examen"],trabajo:["💼","Trabajo"],gym:["🏋️","Gym / deporte"],otro:["📌","Otro"]};
+const fdate=d=>{const x=new Date(d+"T12:00");return DN[x.getDay()]+" "+x.getDate()+" "+MN[x.getMonth()].slice(0,3);};
+let calM=null,calSel=null;
+function renderCal(){
+  const t=today(); if(!calSel) calSel=t; if(!calM){const n=new Date();calM=[n.getFullYear(),n.getMonth()];}
+  const [Y,M]=calM; $("calTitle").textContent=MN[M]+" "+Y;
+  const first=new Date(Y,M,1),off=(first.getDay()+6)%7,start=new Date(Y,M,1-off);
+  let h=["L","M","X","J","V","S","D"].map(x=>`<div class="h">${x}</div>`).join("");
+  for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const k=key(d);
+    if(i>=35&&d.getMonth()!==M) break;
+    const n=S.events.filter(e=>e.date===k).length;
+    h+=`<button data-a="calPick" data-d="${k}" class="${d.getMonth()!==M?"out":""} ${k===t?"td":""} ${k===calSel?"sel":""}">${d.getDate()}${n?`<i>${"<b></b>".repeat(Math.min(3,n))}</i>`:""}</button>`;}
+  $("cal").innerHTML=h;
+  const L=S.events.filter(e=>e.date===calSel).sort((a,b)=>(a.time||"99")<(b.time||"99")?-1:1);
+  $("calDayT").textContent=(calSel===t?"HOY · ":"")+fdate(calSel).toUpperCase();
+  $("calDay").innerHTML=L.length?L.map(evRow).join(""):'<div class="hint">Nada este día.</div>';
+  const nx=S.events.filter(e=>e.date>t).sort((a,b)=>(a.date+(a.time||""))<(b.date+(b.time||""))?-1:1).slice(0,4);
+  $("calNext").innerHTML=nx.length?'<div class="small" style="margin-bottom:2px">PRÓXIMOS</div>'+nx.map(evRow).join(""):"";
+}
+function evRow(e){const ic=(EVT[e.type]||EVT.otro)[0];return `<div class="ev" data-a="evEdit" data-id="${e.id}" style="cursor:pointer"><span class="ic">${ic}</span><div style="flex:1"><div style="font-weight:700">${esc(e.title)}</div><div class="small">${fdate(e.date)}${e.time?" · "+esc(e.time):""}${e.note?" · "+esc(e.note):""}</div></div></div>`;}
+function evSheet(e){
+  const isNew=!e; e=e||{id:"e"+Date.now(),date:calSel||today(),time:"",title:"",type:"otro",note:""};
+  openSheet(`<h2>${isNew?"Nuevo evento":"Editar evento"}</h2>
+  <label>Tipo</label><div class="dseg" id="et">${Object.entries(EVT).map(([k,v])=>`<button data-t="${k}" class="${e.type===k?"on":""}">${v[0]} ${v[1]}</button>`).join("")}</div>
+  <label>Qué</label><input id="en" value="${esc(e.title)}" placeholder="p. ej. Dentista, Fiesta de Halloween, Examen de Historia">
+  <div class="row"><div style="flex:1"><label>Día</label><input id="ed" type="date" value="${e.date}"></div><div style="flex:1"><label>Hora (opcional)</label><input id="eh" type="time" value="${esc(e.time)}"></div></div>
+  <label>Nota (opcional)</label><input id="eo" value="${esc(e.note||"")}" placeholder="p. ej. llevar la tarjeta sanitaria">
+  ${footer(!isNew)}`);
+  $("et").onclick=x=>{const b=x.target.closest("[data-t]");if(!b)return;$("et").querySelectorAll("button").forEach(y=>y.classList.toggle("on",y===b));};
+  wire(()=>{if(!val("en")||!$("ed").value)return;e.title=val("en");e.date=$("ed").value;e.time=$("eh").value||"";e.note=val("eo");e.type=($("et").querySelector(".on")||{dataset:{t:"otro"}}).dataset.t;if(isNew)S.events.push(e);calSel=e.date;const d=new Date(e.date+"T12:00");calM=[d.getFullYear(),d.getMonth()];save();closeSheet();renderCal();renderEst();toast("Apuntado: "+fdate(e.date));},
+    ()=>{S.events=S.events.filter(x=>x.id!==e.id);save();closeSheet();renderCal();renderEst();});
 }
 function addNote(){
   const txt=$("nIn").value.trim(); if(!txt) return;
@@ -645,23 +738,32 @@ function renderEst(){
   $("triSus").textContent=ts.sus; $("triSus").className="avg "+(ts.sus?"ko":"");
   $("triObj").textContent=fmt(S.studies.target);
   const m=$("triMsg");
-  if(ts.sus){m.style.display="block";m.textContent="⚠ "+ts.sus+" suspendida"+(ts.sus>1?"s":"")+". No vas a repetir: mira abajo qué nota necesitas en cada una.";}
+  if(ts.sus){m.style.display="block";m.textContent="⚠ "+ts.sus+" asignatura"+(ts.sus>1?"s":"")+" por debajo del 5. No vas a repetir: mira abajo qué necesitas en cada una.";}
   else if(ts.n&&ts.avg>=S.studies.target){m.style.display="block";m.style.borderColor="var(--ok)";m.style.background="rgba(74,222,128,.08)";m.textContent="✓ Todo aprobado y por encima del objetivo. Sigue así.";}
   else m.style.display="none";
   if(!ts.sus&&!(ts.n&&ts.avg>=S.studies.target)){m.style.borderColor="";m.style.background="";}
   $("subjects").innerHTML=S.studies.subjects.map(s=>{
     const a=subjAvg(tri,s.id),tg=subjTarget(s),cls=a==null?"":a<5?"ko":a>=tg?"ok":"gold";
     let need="";
-    if(tri!=="f"){const L=subjGrades(tri,s.id),nd=needed(tri,s);
+    if(tri!=="f"){const L=subjGrades(tri,s.id),c=critOf(s),v=comps(tri,s.id);
+      const cr=`<div class="small" style="margin-top:6px">Parciales ${c.p}% · Trimestral ${c.t}%${+c.o?" · Otros "+c.o+"%":""}${v.P!=null?" · media parciales <b>"+fmt(v.P)+"</b>":""}</div>`;
+      const r1=x=>fmt(Math.ceil(x*10)/10);
       if(!L.length) need=`<div class="need small">Sin notas todavía</div>`;
-      else if(a>=tg) need=`<div class="need ok">✓ Por encima de tu objetivo (${fmt(tg)})</div>`;
-      else if(nd>10) need=`<div class="need ko">Para llegar al ${fmt(tg)} necesitas más de un 10 en un examen: tienes que sacar buena nota en varios.</div>`;
-      else need=`<div class="need ${a<5?"ko":"gold"}">Necesitas un <b>${fmt(Math.max(0,Math.ceil(nd*10)/10))}</b> en el próximo examen para llegar al ${fmt(tg)}${a<5?" · ahora mismo suspendes":""}</div>`;}
+      else if(v.T!=null) need=`<div class="need ${a>=5?(a>=tg?"ok":"gold"):"ko"}">${a>=5?"✓ Trimestre aprobado":"✗ Trimestre suspendido"} con un ${fmt(a)}${a>=5&&a<tg?" (objetivo "+fmt(tg)+")":""}</div>`;
+      else if(v.P==null) need=`<div class="need small">Apunta los parciales y te digo qué necesitas en el trimestral.</div>`;
+      else{const n5=needTrim(tri,s,5),nt=needTrim(tri,s,tg);
+        if(n5==null) need="";
+        else if(n5>10) need=`<div class="need ko">⚠ Con estos parciales, ni con un 10 en el trimestral llegas al 5. Habla ya con el profe: trabajo extra o recuperación.</div>`;
+        else need=`<div class="need ${n5>6?"ko":"gold"}">🎯 En el trimestral necesitas un <b>${r1(Math.max(0,n5))}</b> para aprobar${nt!=null&&tg>5?(nt>10?" (el "+fmt(tg)+" ya no se puede este trimestre)":" y un <b>"+r1(Math.max(0,nt))+"</b> para tu "+fmt(tg)):""}${v.O==null&&+c.o?" · suponiendo que en «otros» sacas como en los parciales":""}</div>`;}
+      need+=cr;}
     else{const tris=["1","2","3"].map(x=>subjAvg(x,s.id));need=`<div class="small" style="margin-top:6px">${tris.map((v,i)=>(i+1)+"º: "+(v==null?"–":fmt(v))).join(" · ")}</div>`;}
-    const gr=tri==="f"?"":`<div class="gr">${subjGrades(tri,s.id).map(g=>`<button data-a="editGrade" data-s="${s.id}" data-g="${g.id}" class="${g.v<5?"ko":""}">${esc(g.n||"Examen")}: <b>${fmt(g.v)}</b>${(+g.w||1)!==1?" ×"+g.w:""}</button>`).join("")}<button data-a="addGrade" data-s="${s.id}" style="color:var(--red2)">+ nota</button></div>`;
+    const gr=tri==="f"?"":`<div class="gr">${subjGrades(tri,s.id).map(g=>`<button data-a="editGrade" data-s="${s.id}" data-g="${g.id}" class="${g.v<5?"ko":""}"><span class="kind">${{p:"PARCIAL",t:"TRIM.",o:"OTROS"}[gKind(g)]}</span>${esc(g.n||"Examen")}: <b>${fmt(g.v)}</b>${(+g.w||1)!==1?" ×"+g.w:""}</button>`).join("")}<button data-a="addGrade" data-s="${s.id}" style="color:var(--red2)">+ nota</button></div>`;
     return `<div class="subj"><div class="row between"><span class="nm" data-a="editSubj" data-s="${s.id}" style="cursor:pointer">${esc(s.name)}</span><span class="avg ${cls}" style="font-size:22px">${a==null?"–":fmt(a)}</span></div>${gr}${need}</div>`;
   }).join("")||'<div class="hint">Añade tus asignaturas.</div>';
   $("fToday").textContent=(S.focus[today()]||0)+" min hoy";
+  const ex=S.events.filter(e=>e.type==="examen"&&e.date>=today()).sort((a,b)=>a.date<b.date?-1:1).slice(0,6);
+  $("examCard").style.display=ex.length?"block":"none";
+  $("examList").innerHTML=ex.map(e=>{const dd=Math.round((new Date(e.date+"T12:00")-new Date(today()+"T12:00"))/864e5);return `<div class="ev"><span class="ic">📝</span><div class="l" style="flex:1"><div style="font-weight:700">${esc(e.title)}</div><div class="small">${fdate(e.date)}${e.time?" · "+esc(e.time):""}</div></div><b class="${dd<=3?"ko":""}">${dd===0?"HOY":dd===1?"mañana":"en "+dd+" días"}</b></div>`}).join("");
 }
 
 // ================= RENDER: GYM =================
@@ -744,6 +846,11 @@ document.addEventListener("click",e=>{
   const a=b.dataset.a,t=today(),was=dayScore(new Date());
   switch(a){
     case "noteAdd": addNote(); break;
+    case "calPick": calSel=b.dataset.d; renderCal(); break;
+    case "calPrev": case "calNext":{let [Y,M]=calM;M+=a==="calNext"?1:-1;if(M<0){M=11;Y--;}if(M>11){M=0;Y++;}calM=[Y,M];renderCal();break;}
+    case "calToday":{calSel=today();const n=new Date();calM=[n.getFullYear(),n.getMonth()];renderCal();break;}
+    case "evAdd": evSheet(null); break;
+    case "evEdit": evSheet(S.events.find(x=>x.id===b.dataset.id)); break;
     case "noteChk":{const n=S.dnotes.find(x=>x.id===b.dataset.id);n.d=!n.d;n.doneDate=n.d?t:null;save();renderHoy();afterCheck(was);break;}
     case "noteDel":{S.dnotes=S.dnotes.filter(x=>x.id!==b.dataset.id);save();renderHoy();break;}
     case "ag":{S.agDone[t]=S.agDone[t]||{};S.agDone[t][b.dataset.i]=!S.agDone[t][b.dataset.i];save();renderHoy();afterCheck(was);break;}
@@ -837,12 +944,14 @@ function perSheet(p,it){
 }
 function gradeSheet(sid,gid){
   const T=S.studies.grades[tri]=S.studies.grades[tri]||{},L=T[sid]=T[sid]||[],s=S.studies.subjects.find(x=>x.id===sid);
-  const g=gid?L.find(x=>x.id===gid):{id:"g"+Date.now(),n:"Examen "+(L.length+1),v:"",w:1};
+  const g=gid?L.find(x=>x.id===gid):{id:"g"+Date.now(),n:"Parcial "+(L.filter(x=>gKind(x)==="p").length+1),v:"",w:1,k:"p"};
   openSheet(`<h2>${esc(s.name)} · ${tri}º trimestre</h2>
-  <label>Nombre</label><input id="gn" value="${esc(g.n)}" placeholder="Examen tema 3">
+  <label>Tipo</label><div class="dseg" id="gk">${[["p","Parcial"],["t","Examen trimestral"],["o","Otros (trabajos, deberes)"]].map(([k,l])=>`<button data-k="${k}" class="${gKind(g)===k?"on":""}">${l}</button>`).join("")}</div>
+  <label>Nombre</label><input id="gn" value="${esc(g.n)}" placeholder="Parcial tema 3">
   <div class="row"><div style="flex:1"><label>Nota (0–10)</label><input id="gv" type="number" inputmode="decimal" step="0.1" min="0" max="10" value="${g.v}"></div><div style="flex:1"><label>Peso (cuánto cuenta)</label><input id="gw" type="number" inputmode="decimal" step="0.5" value="${g.w||1}"></div></div>
-  <p class="hint">Peso 1 = normal. Si un examen cuenta el doble, pon 2.</p>${footer(!!gid)}`);
-  wire(()=>{const v=parseFloat($("gv").value.replace(",","."));if(isNaN(v)||v<0||v>10)return;g.n=val("gn")||"Examen";g.v=v;g.w=+$("gw").value||1;if(!gid)L.push(g);save();closeSheet();renderEst();renderHoy();toast(v>=5?(v>=subjTarget(s)?"💪 "+fmt(v)+". Así se hace.":"Aprobado. Ahora a subir."):"Suspenso. Se aprende y se vuelve más fuerte.");},
+  <p class="hint">Peso 1 = normal. Si un parcial cuenta el doble que otro, pon 2.</p>${footer(!!gid)}`);
+  $("gk").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;$("gk").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));const nm=$("gn");if(!gid&&/^(Parcial|Trimestral|Trabajo) ?\d*$/.test(nm.value))nm.value={p:"Parcial "+(L.filter(x=>gKind(x)==="p").length+1),t:"Trimestral",o:"Trabajo"}[b.dataset.k];};
+  wire(()=>{const v=parseFloat($("gv").value.replace(",","."));if(isNaN(v)||v<0||v>10)return;g.n=val("gn")||"Examen";g.v=v;g.w=+$("gw").value||1;g.k=($("gk").querySelector(".on")||{dataset:{k:"p"}}).dataset.k;if(!gid)L.push(g);save();closeSheet();renderEst();renderHoy();toast(v>=5?(v>=subjTarget(s)?"💪 "+fmt(v)+". Así se hace.":"Aprobado. Ahora a subir."):"Suspenso. Se aprende y se vuelve más fuerte.");},
     ()=>{T[sid]=L.filter(x=>x.id!==gid);save();closeSheet();renderEst();renderHoy();});
 }
 function subjSheet(s){
@@ -850,9 +959,12 @@ function subjSheet(s){
   openSheet(`<h2>${isNew?"Nueva asignatura":"Editar asignatura"}</h2>
   <label>Nombre</label><input id="sn" value="${esc(s.name)}">
   <label>Nota objetivo (vacío = la general)</label><input id="stg" type="number" inputmode="decimal" step="0.5" value="${s.target!=null?s.target:""}" placeholder="${S.studies.target}">
+  <label>Cuánto cuenta cada parte (%)</label>
+  <div class="row"><div style="flex:1"><div class="small">Parciales</div><input id="cp" type="number" inputmode="numeric" value="${critOf(s).p}"></div><div style="flex:1"><div class="small">Trimestral</div><input id="ct" type="number" inputmode="numeric" value="${critOf(s).t}"></div><div style="flex:1"><div class="small">Otros</div><input id="co" type="number" inputmode="numeric" value="${critOf(s).o}"></div></div>
+  <p class="hint">Míralo en los criterios de evaluación de la asignatura (o pregúntalo al profe).</p>
   <label>Objetivo general para todas</label><input id="sgt" type="number" inputmode="decimal" step="0.5" value="${S.studies.target}">
   ${footer(!isNew)}`);
-  wire(()=>{if(!val("sn"))return;s.name=val("sn");const tg=$("stg").value;if(tg==="")delete s.target;else s.target=+tg;S.studies.target=+$("sgt").value||6;if(isNew)S.studies.subjects.push(s);save();closeSheet();renderEst();renderHoy();},
+  wire(()=>{if(!val("sn"))return;s.name=val("sn");const tg=$("stg").value;if(tg==="")delete s.target;else s.target=+tg;S.studies.target=+$("sgt").value||6;s.crit={p:+$("cp").value||0,t:+$("ct").value||0,o:+$("co").value||0};if(isNew)S.studies.subjects.push(s);save();closeSheet();renderEst();renderHoy();},
     ()=>{S.studies.subjects=S.studies.subjects.filter(x=>x.id!==s.id);save();closeSheet();renderEst();});
 }
 function splitSheet(){
@@ -950,8 +1062,6 @@ function importSheet(){
 }
 
 // ================= NOTIFICACIONES PUSH =================
-const SB_URL="https://dffavtchgwwrepunyids.supabase.co";
-const SB_KEY="sb_publishable_07Pc-ZT16chbdMX_pCzvKg_v_VIiL2z";
 const VAPID="BFZBT_P9GIrgz9hdCV8XVTuI7oQl-Vz97tngwzNCkVOuC8Wuw8CfwSTpFDiPXhfx07Bzgqr_nhT6QJKgSb58kh0";
 const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 const pushOK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
@@ -999,7 +1109,7 @@ $("freset").onclick=()=>{clearInterval(fTick);fEnd=null;fLeft=fLen;drawClock();}
 
 // ================= NAV =================
 $("tabs").onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+b.dataset.v));window.scrollTo(0,0);};
-function renderAll(){try{notifStatus();}catch(e){}renderHoy();renderObj();renderEst();renderGym();renderMot();renderMet();renderPresets();drawClock();}
+function renderAll(){try{notifStatus();renderSyncCard();}catch(e){}renderHoy();renderObj();renderEst();renderGym();renderMot();renderMet();renderPresets();drawClock();}
 renderAll();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 setInterval(()=>{if(!$("sheet").classList.contains("on")&&!document.activeElement.matches("input,textarea"))renderHoy();},60000);
