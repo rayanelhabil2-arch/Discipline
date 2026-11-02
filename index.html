@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0d0d0e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,7 +16,7 @@
 <style>
 :root{--bg:#0d0d0e;--card:#17171a;--card2:#1f1f23;--line:#2a2a2f;--tx:#f4f4f5;--mut:#8b8b93;--red:#d6312b;--red2:#ff5a4f;--ok:#4ade80;--gold:#e8b44a;--head:"Oswald",Impact,sans-serif;--r:12px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Inter,system-ui,sans-serif;font-size:15px}
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior-y:none;margin:0;background:var(--bg);color:var(--tx);font-family:Inter,system-ui,sans-serif;font-size:15px}
 body{padding:calc(env(safe-area-inset-top) + 16px) 14px calc(env(safe-area-inset-bottom) + 92px)}
 .wrap{max-width:520px;margin:0 auto}
 .e{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--red2);font-weight:600}
@@ -31,7 +31,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .btn.red{background:var(--red);border-color:var(--red);color:#fff}
 .btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
 .lnk{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--red2);font-weight:700;padding:4px 0}
-input,textarea,select{font:inherit;color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;outline:none}
+input,textarea,select{font:inherit;font-size:16px;color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;outline:none}
 input:focus,textarea:focus{border-color:var(--red)}
 textarea{resize:vertical;line-height:1.45}
 .small{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
@@ -153,6 +153,9 @@ svg text{font-family:Inter}
 @keyframes f{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;z-index:10}
 .sheet.on{display:flex}
+.sheet{overscroll-behavior:contain;touch-action:none}
+.sheet .in{touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+body.locked{position:fixed;left:0;right:0;overflow:hidden}
 .sheet .in{background:var(--card);width:100%;max-width:520px;margin:0 auto;border-radius:18px 18px 0 0;border-top:2px solid var(--red);padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:90vh;overflow:auto}
 .sheet label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);display:block;margin:12px 0 5px;font-weight:600}
 .del{color:var(--red2);font-size:13px;font-weight:700}
@@ -968,8 +971,15 @@ $("objSeg").onclick=e=>{const b=e.target.closest("[data-o]");if(!b)return;objTab
 $("triSeg").onclick=e=>{const b=e.target.closest("[data-t]");if(!b)return;tri=b.dataset.t;renderEst();};
 
 // ================= HOJAS (EDITORES) =================
-function openSheet(html){$("sheetIn").innerHTML=html;$("sheet").classList.add("on");}
-function closeSheet(){$("sheet").classList.remove("on");}
+let lockY=0;
+function openSheet(html){$("sheetIn").innerHTML=html;if(!$("sheet").classList.contains("on")){lockY=window.scrollY;document.body.style.top=(-lockY)+"px";document.body.classList.add("locked");}$("sheet").classList.add("on");$("sheetIn").scrollTop=0;}
+function closeSheet(){stopScan();$("sheet").classList.remove("on");document.body.classList.remove("locked");document.body.style.top="";window.scrollTo(0,lockY);}
+// sin zoom: ni pellizcar ni doble toque
+["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+let lastTouch=0;document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<300&&!e.target.closest("input,textarea,select"))e.preventDefault();lastTouch=n;},{passive:false});
+// con una hoja abierta, solo se mueve su contenido (si hace falta)
+document.addEventListener("touchmove",e=>{if(!$("sheet").classList.contains("on"))return;const sc=e.target.closest("#fres,.in");if(!sc||sc.scrollHeight<=sc.clientHeight+1)e.preventDefault();},{passive:false});
 $("sheet").onclick=e=>{if(e.target.id==="sheet")closeSheet();};
 const footer=(del)=>`<div class="row between" style="margin-top:20px">${del?'<button class="del" id="xDel">Eliminar</button>':"<span></span>"}<div class="row"><button class="btn" id="xCan">Cancelar</button><button class="btn red" id="xOk">Guardar</button></div></div>`;
 function wire(ok,del){$("xCan").onclick=closeSheet;$("xOk").onclick=ok;if(del&&$("xDel"))$("xDel").onclick=del;}
@@ -1161,6 +1171,16 @@ const BASIC=[["🍽️ Platos", "Arroz con pollo", 160.0, 9.0, 20.0, 0.5, 4.5, 0
 ["💪 Suplementos", "Batido de proteína con leche", 82.0, 11.3, 5.1, 5.0, 2.0, 0.0, 280.0, "1 batido"],
 ["💪 Suplementos", "Batido de proteína con agua", 34.5, 7.1, 0.7, 0.5, 0.45, 0.0, 330.0, "1 batido"],
 ["💪 Suplementos", "Ganador de peso (gainer)", 380.0, 20.0, 70.0, 15.0, 3.0, 1.0, 100.0, "1 ración"],
+["🍔 Comida rápida","McDonald's Big Mac",234,12.6,19,4,11.6,1.5,215,"1 Big Mac"],
+["🍔 Comida rápida","McDonald's Cheeseburger",254,13,27,6,10,1.4,118,"1 hamburguesa"],
+["🍔 Comida rápida","McDonald's McPollo",231,10,24,3,10,1.5,190,"1 McPollo"],
+["🍔 Comida rápida","McDonald's McNuggets",250,15,16,0.5,14,1,104,"6 nuggets"],
+["🍔 Comida rápida","McDonald's patatas medianas",290,3.4,37,0.3,14,3.5,114,"1 ración mediana"],
+["🍔 Comida rápida","Burger King Whopper",228,10,17,4,13,1.5,290,"1 Whopper"],
+["🍔 Comida rápida","KFC tira de pollo",255,19,14,0.5,13.5,0.6,47,"1 tira"],
+["🍔 Comida rápida","Pizza a domicilio (barbacoa)",255,11,29,3,10,2,110,"1 porción"],
+["🍔 Comida rápida","Plato de kebab con patatas",200,10,15,1.5,11,1.5,500,"1 plato"],
+["🍔 Comida rápida","Bocadillo Subway de pollo (15 cm)",147,11,19,3,3,1.7,225,"1 sub"],
 ["🧈 Aceites y extras", "Aceite de oliva", 884.0, 0.0, 0.0, 0.0, 100.0, 0.0, 10.0, "1 cucharada"],
 ["🧈 Aceites y extras", "Mantequilla", 717.0, 0.9, 0.1, 0.1, 81.0, 0.0, 10.0, "1 porción"],
 ["🧈 Aceites y extras", "Mayonesa", 680.0, 1.0, 0.6, 0.6, 75.0, 0.0, 15.0, "1 cucharada"],
@@ -1176,38 +1196,88 @@ function mealNow(){const h=new Date().getHours();return h<11?"des":h<16?"com":h<
 function portionTxt(x){if(x.ul&&x.u&&x.g){const n=x.g/x.u;if(Math.abs(n-Math.round(n*2)/2)<0.01){const r=Math.round(n*2)/2;return (r===1?x.ul:fmt(r)+" × "+x.ul.replace(/^1 /,""))+" ("+fmt(x.g)+" g)";}}return x.g?fmt(x.g)+" g":"ración";}
 function foodTotals(k){const L=S.food.log[k]||[];const o={kcal:(S.gym.kcal[k]||0),p:0,c:0,f:0};L.forEach(x=>{o.kcal+=x.kcal;o.p+=x.p;o.c+=x.c;o.f+=x.f;});return o;}
 let offT=null,offSeq=0;
+// productos de supermercados (Open Food Facts), cargados la primera vez que se usan
+let STORE=null,storeP=null;
+const STORES=["Mercadona","Lidl","Carrefour","Aldi","Dia","Alcampo","Eroski"];
+function loadStore(){if(STORE)return Promise.resolve(STORE);if(!storeP)storeP=fetch("foods-es.json").then(r=>r.json()).then(a=>STORE=a.map(([name,brand,kcal,p,c,s,f,fb,sq,store,code])=>({name,brand,kcal,p,c,s,f,fb,u:sq||0,ul:sq?"1 ración":"",store,code}))).catch(()=>{storeP=null;return [];});return storeP;}
+function offProduct(x){const n=x.nutriments||{};const sq=+x.serving_quantity||0;return {name:x.product_name_es||x.product_name||"",brand:(x.brands||"").split(",")[0],kcal:+n["energy-kcal_100g"]||(+n["energy_100g"]||0)/4.184,p:+n.proteins_100g||0,c:+n.carbohydrates_100g||0,s:n.sugars_100g!=null?+n.sugars_100g:null,f:+n.fat_100g||0,fb:n.fiber_100g!=null?+n.fiber_100g:null,u:sq,ul:sq?"1 ración":"",code:x.code};}
+// ---- escáner de código de barras ----
+let scanStop=null;
+function stopScan(){if(scanStop){try{scanStop();}catch(e){}scanStop=null;}}
+async function scanSheet(meal){
+  openSheet(`<h2>Escanear código</h2><p class="hint">Apunta al código de barras del producto.</p>
+  <div style="position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:4/3;margin-top:8px"><video id="scv" playsinline muted style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;left:10%;right:10%;top:45%;height:2px;background:var(--red)"></div></div>
+  <div class="small" id="scmsg" style="margin-top:8px">Abriendo la cámara…</div>
+  <div class="row" style="margin-top:10px"><input id="sccode" inputmode="numeric" placeholder="O escribe el número del código" style="flex:1"><button class="btn red" id="scgo">Buscar</button></div>
+  <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn" id="xCan">Cerrar</button></div>`);
+  $("xCan").onclick=closeSheet;
+  const found=async code=>{stopScan();if($("scmsg"))$("scmsg").textContent="Buscando "+code+"…";
+    const st=(await loadStore()).find(x=>x.code===code); if(st){portionSheet(st,meal,null);return;}
+    try{const r=await fetch("https://world.openfoodfacts.org/api/v2/product/"+code+".json?fields=code,product_name,product_name_es,brands,nutriments,serving_quantity");const j=await r.json();
+      const f=j&&j.product?offProduct(Object.assign({code},j.product)):null;
+      if(f&&f.name&&f.kcal>0){portionSheet(f,meal,null);return;}
+      if($("scmsg"))$("scmsg").textContent="No conozco ese producto. Añádelo a mano con los datos de la etiqueta.";
+    }catch(e){if($("scmsg"))$("scmsg").textContent="Sin conexión. Prueba más tarde o añádelo a mano.";}};
+  $("scgo").onclick=()=>{const c=$("sccode").value.replace(/\D/g,"");if(c.length>=8)found(c);};
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+    const v=$("scv"); if(!v){stream.getTracks().forEach(t=>t.stop());return;}
+    let alive=true; scanStop=()=>{alive=false;stream.getTracks().forEach(t=>t.stop());};
+    v.srcObject=stream; await v.play(); $("scmsg").textContent="Buscando el código…";
+    if("BarcodeDetector" in window){
+      const det=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
+      const tick=async()=>{if(!alive)return;try{const r=await det.detect(v);if(r&&r[0]){found(r[0].rawValue);return;}}catch(e){}setTimeout(tick,250);};tick();
+    } else {
+      if(!window.ZXing) await new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc);});
+      const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E]);
+      const reader=new ZXing.MultiFormatReader();reader.setHints(hints);
+      const cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});
+      const tick=()=>{if(!alive)return;try{const w=v.videoWidth,h=v.videoHeight;if(w){cv.width=w;cv.height=h;cx.drawImage(v,0,0);
+        const src=new ZXing.HTMLCanvasElementLuminanceSource(cv),bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));const r=reader.decode(bmp);if(r){found(r.getText());return;}}}catch(e){}setTimeout(tick,200);};tick();
+    }
+  }catch(e){if($("scmsg"))$("scmsg").textContent="No puedo usar la cámara. Dale permiso en Ajustes o escribe el número del código.";}
+}
 function foodSheet(meal){
   const mn=MEALS.find(m=>m[0]===meal)[1];
+  loadStore();
   const hasRec=S.food.mine.length>0;
   openSheet(`<h2>Añadir a ${mn}</h2>
   <input id="fq" placeholder="Busca: huevo duro, arroz con pollo, Mercadona…" autocomplete="off" style="margin-top:10px">
-  <select id="fcat" style="margin-top:8px">${hasRec?'<option value="_rec">🕘 Recientes</option>':""}${FOOD_CATS.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("")}</select>
+  <div class="row" style="margin-top:8px"><select id="fcat" style="flex:1">${hasRec?'<option value="_rec">🕘 Recientes</option>':""}<optgroup label="Comidas y básicos">${FOOD_CATS.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("")}</optgroup><optgroup label="Supermercados">${STORES.map(st=>`<option value="st:${st}">🛒 ${st}</option>`).join("")}</optgroup></select><button class="btn red" id="fscan" style="flex-shrink:0">📷</button></div>
   <div id="fres" style="margin-top:6px;max-height:50vh;overflow:auto"></div>
   <div class="row" style="margin-top:12px;justify-content:space-between"><button class="btn sm" id="fman">Añadir a mano</button><button class="btn" id="xCan">Cerrar</button></div>`);
   if(!hasRec){const pref={des:"🍳 Desayunos",com:"🍽️ Platos",cen:"🍽️ Platos",mer:"🍳 Desayunos",snk:"🍫 Snacks y dulces"}[meal];$("fcat").value=pref;}
   $("xCan").onclick=closeSheet;
   $("fman").onclick=()=>manualFood(meal);
+  $("fscan").onclick=()=>scanSheet(meal);
   const row=(f,i)=>{const unit=f.ul&&f.u?`${Math.round(f.kcal*f.u/100)} kcal / ${esc(f.ul)}${/\d+ g\)$/.test(f.ul)?"":" ("+fmt(f.u)+" g)"}`:`${Math.round(f.kcal)} kcal /100 g`;
-    return `<div class="fr" data-fi="${i}"><div style="min-width:0"><div style="font-weight:600">${esc(f.name)}</div><div class="small">${f.brand?esc(f.brand)+" · ":""}${unit} · ${fmt(Math.round((f.ul?f.p*f.u/100:f.p)*10)/10)} g prot.</div></div><span style="color:var(--red2);font-weight:800">+</span></div>`;};
+    return `<div class="fr" data-fi="${i}"><div style="min-width:0"><div style="font-weight:600">${esc(f.name)}</div><div class="small">${f.store?'<span class="kind">'+esc(f.store.toUpperCase())+'</span>':""}${f.brand&&f.brand.toLowerCase()!==String(f.store||"").toLowerCase()?esc(f.brand)+" · ":""}${unit} · ${fmt(Math.round((f.ul?f.p*f.u/100:f.p)*10)/10)} g prot.</div></div><span style="color:var(--red2);font-weight:800">+</span></div>`;};
   let list=[];
   const norm=t=>t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const show=(local,remote,msg,title)=>{if(!$("fres")||!$("fq"))return;list=local.concat(remote);$("fres").innerHTML=(local.length&&title?'<div class="small" style="margin:4px 0">'+title+'</div>':"")+local.map(row).join("")+(msg?`<div class="small" style="margin:10px 0 4px">${msg}</div>`:"")+remote.map((f,i)=>row(f,local.length+i)).join("");};
-  const byCat=()=>{const c=$("fcat").value;return c==="_rec"?S.food.mine.slice(0,30):BASIC.filter(b=>b.cat===c);};
-  const localFor=q=>{const n=norm(q);const pool=S.food.mine.concat(BASIC.filter(b=>!S.food.mine.some(m=>m.name===b.name)));return pool.filter(f=>norm(f.name).includes(n)).slice(0,12);};
-  const showCat=()=>show(byCat(),[],"",$("fcat").selectedOptions[0].textContent.toUpperCase());
+  const byCat=()=>{const c=$("fcat").value;if(c==="_rec")return S.food.mine.slice(0,30);if(c.startsWith("st:"))return STORE?STORE.filter(x=>x.store===c.slice(3)).slice(0,120):[];return BASIC.filter(b=>b.cat===c);};
+  const localFor=q=>{const words=norm(q).split(/\s+/).filter(Boolean);const pool=S.food.mine.concat(BASIC.filter(b=>!S.food.mine.some(m=>m.name===b.name)));
+    const hit=f=>{const t=norm(f.name+" "+(f.brand||"")+" "+(f.store||"")+(f.store==="Mercadona"?" hacendado":""));return words.every(w=>t.includes(w));};
+    return pool.filter(hit).slice(0,10).concat((STORE||[]).filter(hit).slice(0,40));};
+  const showCat=()=>{const c=$("fcat").value;if(c.startsWith("st:")&&!STORE){show([],[],"Cargando productos…");loadStore().then(()=>{if($("fcat")&&$("fcat").value===c&&!$("fq").value.trim())showCat();});return;}
+    const L=byCat();show(L,[],c.startsWith("st:")?"Los 120 más comprados. Escribe arriba para buscar entre todos.":"",$("fcat").selectedOptions[0].textContent.toUpperCase());};
   showCat();
   $("fcat").onchange=()=>{$("fq").value="";showCat();};
   $("fres").onclick=e=>{const r=e.target.closest("[data-fi]");if(r)portionSheet(list[+r.dataset.fi],meal,null);};
   $("fq").oninput=()=>{const q=$("fq").value.trim();clearTimeout(offT);
     if(!q){showCat();return;}
-    show(localFor(q),[],q.length>=3?"Buscando productos de marca…":"","BÁSICOS Y RECIENTES");
+    $("fres").dataset.remote="";
+    show(localFor(q),[],q.length>=3?"Buscando más productos…":"","RESULTADOS");
+    loadStore().then(()=>{if($("fq")&&$("fq").value.trim()===q&&!$("fres").dataset.remote)show(localFor(q),[],q.length>=3?"Buscando más productos…":"","RESULTADOS");});
     if(q.length<3)return; const my=++offSeq;
     offT=setTimeout(async()=>{try{
-      const r=await fetch("https://es.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(q)+"&search_simple=1&json=1&page_size=25&fields=product_name,brands,nutriments,serving_quantity");
+      const r=await fetch("https://es.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(q.replace(/mercadona/i,"hacendado"))+"&search_simple=1&json=1&page_size=30&sort_by=unique_scans_n&tagtype_0=countries&tag_contains_0=contains&tag_0=spain&fields=code,product_name,product_name_es,brands,nutriments,serving_quantity");
       const j=await r.json(); if(my!==offSeq)return;
-      const rem=(j.products||[]).map(x=>{const n=x.nutriments||{};return {name:x.product_name||"",brand:(x.brands||"").split(",")[0],kcal:+n["energy-kcal_100g"]||(+n["energy_100g"]||0)/4.184,p:+n.proteins_100g||0,c:+n.carbohydrates_100g||0,s:n.sugars_100g!=null?+n.sugars_100g:null,f:+n.fat_100g||0,fb:n.fiber_100g!=null?+n.fiber_100g:null,u:+x.serving_quantity||0,ul:+x.serving_quantity?"1 ración":""};}).filter(x=>x.name&&x.kcal>0);
-      show(localFor(q),rem,rem.length?"PRODUCTOS DE MARCA (Open Food Facts)":"No he encontrado productos de marca. Prueba otra palabra o añádelo a mano.","BÁSICOS Y RECIENTES");
-    }catch(e){if(my===offSeq)show(localFor(q),[],"Sin conexión: solo básicos y recientes.","BÁSICOS Y RECIENTES");}},500);};
+      const loc=localFor(q),seen=new Set(loc.map(x=>x.code).filter(Boolean));
+      const rem=(j.products||[]).map(offProduct).filter(x=>x.name&&x.kcal>0&&!seen.has(x.code));
+      if($("fres"))$("fres").dataset.remote="1";
+      show(loc,rem,rem.length?"MÁS PRODUCTOS (Open Food Facts)":(loc.length?"":"No he encontrado nada. Prueba otra palabra, escanea el código 📷 o añádelo a mano."),"RESULTADOS");
+    }catch(e){if(my===offSeq)show(localFor(q),[],"Sin conexión: solo lo guardado en la app.","RESULTADOS");}},500);};
 }
 function portionSheet(f,meal,existing){
   const per=existing?existing.per:{kcal:f.kcal,p:f.p,c:f.c,s:f.s,f:f.f,fb:f.fb};
