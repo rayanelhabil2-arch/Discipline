@@ -581,7 +581,7 @@ const partsDone=(h,k)=>{const v=habVal(h,k);return h.parts&&h.parts.length?h.par
 const habFrac=(h,k)=>h.parts&&h.parts.length?partsDone(h,k)/h.parts.length:(habVal(h,k)?1:0);
 const isDone=(h,k)=>habFrac(h,k)>=1;
 function dayScore(d){
-  const k=key(d),dow=d.getDay(),hs=habFor(dow),ag=agFor(dow),pr=[],ad=S.agDone[k]||{};
+  const k=key(d),dow=d.getDay(),hs=habFor(dow),ag=[],pr=[],ad={};
   const tot=hs.length+ag.length+pr.length;
   const dn=hs.reduce((a,h)=>a+habFrac(h,k),0)+ag.filter((a,i)=>ad[i]).length+pr.filter(p=>p.d&&p.doneDate===k).length;
   return tot?Math.round(dn/tot*100):0;
@@ -681,7 +681,7 @@ function renderHoy(){
   // agenda
   const cur=h*60+n.getMinutes(),ad=S.agDone[t]||{},ag=agFor(dow);
   $("tl").innerHTML=ag.length?ag.map(([tm,lab],i)=>{let cls="";try{const ps=tm.split("-"),s=tmin(ps[0]),e=ps[1]?tmin(ps[1]):s+30;if(cur>=s&&cur<e)cls="now";}catch(e){}
-    return `<div class="task ${ad[i]?"done":""} ${cls}"><span class="t">${esc(tm.replace("-"," – "))}</span><span class="l nm">${esc(lab)}</span><button class="chk ${ad[i]?"on":""}" data-a="ag" data-i="${i}">${ad[i]?"✓":""}</button></div>`}).join(""):'<div class="hint">Nada planeado. Toca «Editar».</div>';
+    return `<div class="task ${cls}"><span class="t">${esc(tm.replace("-"," – "))}</span><span class="l nm">${esc(lab)}</span>${cls?'<span class="small" style="color:var(--red2);font-weight:700">AHORA</span>':""}</div>`}).join(""):'<div class="hint">Nada planeado. Toca «Editar».</div>';
   const R=S.review[t]||{};document.querySelectorAll("[data-rv]").forEach(el=>{if(document.activeElement!==el)el.value=R[el.dataset.rv]||"";});
 }
 function renderNotes(){
