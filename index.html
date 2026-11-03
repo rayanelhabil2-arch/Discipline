@@ -705,7 +705,7 @@ function renderNotes(){
   $("dnext").innerHTML=nx.length?'<div class="small" style="margin-bottom:4px">PRÓXIMOS</div>'+nx.map(n=>`<div class="task"><span class="t" style="width:46px">${n.date.slice(5).split("-").reverse().join("/")}</span><div class="l nm">${esc(n.t)}${n.time?' <span class="small">· '+esc(n.time)+'</span>':""}</div><button class="lnk" data-a="noteDel" data-id="${n.id}" style="color:var(--mut)">✕</button></div>`).join(""):"";
 }
 // ---- calendario ----
-const EVT={medico:["🩺","Médico"],clase:["🎉","Fiesta / clase"],examen:["📝","Examen"],trabajo:["💼","Trabajo"],gym:["🏋️","Gym / deporte"],otro:["📌","Otro"]};
+const EVT={estudio:["📖","Estudio"],medico:["🩺","Médico"],clase:["🎉","Fiesta / clase"],examen:["📝","Examen"],trabajo:["💼","Trabajo"],gym:["🏋️","Gym / deporte"],otro:["📌","Otro"]};
 const fdate=d=>{const x=new Date(d+"T12:00");return DN[x.getDay()]+" "+x.getDate()+" "+MN[x.getMonth()].slice(0,3);};
 let calM=null,calSel=null;
 function renderCal(){
