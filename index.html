@@ -549,17 +549,29 @@ async function pushRemote(){
   }catch(e){setSync("sin conexión");}
   pushing=false;
 }
+// cambios que manda Claude: {id, set:{"ruta.con.puntos": valor}}; se aplican una sola vez
+function applyClaude(p){
+  if(!p||!p.id||!p.set||(S._claudeDone||[]).includes(p.id)) return false;
+  for(const [path,val] of Object.entries(p.set)){const ks=path.split(".");let o=S;for(let i=0;i<ks.length-1;i++){if(o[ks[i]]==null||typeof o[ks[i]]!=="object")o[ks[i]]={};o=o[ks[i]];}o[ks[ks.length-1]]=val;}
+  if(Array.isArray(p.push)) for(const [path,val] of p.push){const ks=path.split(".");let o=S;for(const k of ks.slice(0,-1)){o=o[k]=o[k]||{};}const L=o[ks[ks.length-1]]=o[ks[ks.length-1]]||[];if(!L.some(x=>x&&val&&x.id===val.id))L.push(val);}
+  S._claudeDone=(S._claudeDone||[]).concat(p.id).slice(-30);
+  return true;
+}
 async function pullRemote(){
   if(!SYNC_KEY){setSync("en este móvil");return;}
   try{
     const r=await fetch(SB_URL+"/rest/v1/disciplina_state?select=data,updated_at",{headers:sbH()});
     const rows=await r.json(); const row=rows&&rows[0];
     const remoteT=row?Date.parse(row.updated_at):0, localT=S._savedAt||0;
+    const patch=row&&row.data&&row.data._claude;
+    let pulled=false;
     if(row&&row.data&&row.data.ver&&remoteT>localT+1000){
-      S=merge(row.data); S._savedAt=remoteT;
-      try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}
-      renderAll(); setSync("sincronizado ✓");
-    } else if(!row||!row.data||!row.data.ver||localT>remoteT+1000){ await pushRemote(); }
+      S=merge(row.data); S._savedAt=remoteT; pulled=true;
+    }
+    delete S._claude;
+    if(applyClaude(patch)){ save(); renderAll(); setSync("sincronizado ✓"); toast("📥 Claude ha actualizado tu app"); return; }
+    if(pulled){ try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){} renderAll(); setSync("sincronizado ✓"); }
+    else if(!row||!row.data||!row.data.ver||localT>remoteT+1000){ await pushRemote(); }
     else setSync("sincronizado ✓");
   }catch(e){setSync("sin conexión");}
 }
