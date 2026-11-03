@@ -268,7 +268,7 @@ body.locked{position:fixed;left:0;right:0;overflow:hidden}
     <div class="row between">
       <div><div class="small">Media</div><div class="avg" id="triAvg">–</div></div>
       <div style="text-align:right"><div class="small">En riesgo</div><div class="avg" id="triSus">0</div></div>
-      <div style="text-align:right"><div class="small">Objetivo</div><div class="avg gold" id="triObj">6</div></div>
+      <div style="text-align:right;cursor:pointer" data-a="editTgts"><div class="small">Objetivos ✎</div><div class="avg gold" id="triObj">6</div></div>
     </div>
     <div class="warn" id="triMsg" style="display:none"></div>
   </div>
@@ -830,7 +830,7 @@ function renderEst(){
   const ts=triStats(tri);
   $("triAvg").textContent=ts.avg==null?"–":fmt(ts.avg); $("triAvg").className="avg "+(ts.avg==null?"":ts.avg>=S.studies.target?"ok":"ko");
   $("triSus").textContent=ts.sus; $("triSus").className="avg "+(ts.sus?"ko":"");
-  $("triObj").textContent=fmt(S.studies.target);
+  {const ts2=S.studies.subjects.map(subjTarget);$("triObj").textContent=ts2.length&&ts2.every(v=>v===ts2[0])?fmt(ts2[0]):fmt(Math.round(ts2.reduce((a,b)=>a+b,0)/ts2.length*10)/10);}
   const m=$("triMsg");
   if(ts.sus){m.style.display="block";m.textContent="⚠ "+ts.sus+" asignatura"+(ts.sus>1?"s":"")+" por debajo del 5. No vas a repetir: mira abajo qué necesitas en cada una.";}
   else if(ts.n&&ts.avg>=S.studies.target){m.style.display="block";m.style.borderColor="var(--ok)";m.style.background="rgba(74,222,128,.08)";m.textContent="✓ Todo aprobado y por encima del objetivo. Sigue así.";}
@@ -852,7 +852,7 @@ function renderEst(){
       need+=cr;}
     else{const tris=["1","2","3"].map(x=>subjAvg(x,s.id));need=`<div class="small" style="margin-top:6px">${tris.map((v,i)=>(i+1)+"º: "+(v==null?"–":fmt(v))).join(" · ")}</div>`;}
     const gr=tri==="f"?"":`<div class="gr">${subjGrades(tri,s.id).map(g=>`<button data-a="editGrade" data-s="${s.id}" data-g="${g.id}" class="${g.v<5?"ko":""}"><span class="kind">${{p:"PARCIAL",t:"TRIM.",o:"OTROS"}[gKind(g)]}</span>${esc(g.n||"Examen")}: <b>${fmt(g.v)}</b>${(+g.w||1)!==1?" ×"+g.w:""}</button>`).join("")}<button data-a="addGrade" data-s="${s.id}" style="color:var(--red2)">+ nota</button></div>`;
-    return `<div class="subj"><div class="row between"><span class="nm" data-a="editSubj" data-s="${s.id}" style="cursor:pointer">${esc(s.name)}</span><span class="avg ${cls}" style="font-size:22px">${a==null?"–":fmt(a)}</span></div>${gr}${need}</div>`;
+    return `<div class="subj"><div class="row between"><span class="nm" data-a="editSubj" data-s="${s.id}" style="cursor:pointer">${esc(s.name)}</span><div class="row" style="gap:10px"><button class="btn sm" data-a="editTgt" data-s="${s.id}" title="Cambiar nota objetivo">🎯 ${fmt(tg)} ✎</button><span class="avg ${cls}" style="font-size:22px">${a==null?"–":fmt(a)}</span></div></div>${gr}${need}</div>`;
   }).join("")||'<div class="hint">Añade tus asignaturas.</div>';
   $("fToday").textContent=(S.focus[today()]||0)+" min hoy";
   const ex=S.events.filter(e=>e.type==="examen"&&e.date>=today()).sort((a,b)=>a.date<b.date?-1:1).slice(0,6);
@@ -974,6 +974,8 @@ document.addEventListener("click",e=>{
     case "addGrade": gradeSheet(b.dataset.s,null); break;
     case "editGrade": gradeSheet(b.dataset.s,b.dataset.g); break;
     case "editSubj": subjSheet(S.studies.subjects.find(x=>x.id===b.dataset.s)); break;
+    case "editTgt": tgtSheet(b.dataset.s); break;
+    case "editTgts": tgtSheet(null); break;
     case "addSubj": subjSheet(null); break;
     case "editSplit": splitSheet(b.dataset.d!=null?+b.dataset.d:null); break;
     case "exChk":{const t=today();S.gym.done=S.gym.done||{};S.gym.done[t]=S.gym.done[t]||{};S.gym.done[t][b.dataset.i]=!S.gym.done[t][b.dataset.i];save();renderGym();
@@ -1069,6 +1071,17 @@ function gradeSheet(sid,gid){
   $("gk").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;$("gk").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));const nm=$("gn");if(!gid&&/^(Parcial|Trimestral|Trabajo) ?\d*$/.test(nm.value))nm.value={p:"Parcial "+(L.filter(x=>gKind(x)==="p").length+1),t:"Trimestral",o:"Trabajo"}[b.dataset.k];};
   wire(()=>{const v=parseFloat($("gv").value.replace(",","."));if(isNaN(v)||v<0||v>10)return;g.n=val("gn")||"Examen";g.v=v;g.w=+$("gw").value||1;g.k=($("gk").querySelector(".on")||{dataset:{k:"p"}}).dataset.k;if(!gid)L.push(g);save();closeSheet();renderEst();renderHoy();toast(v>=5?(v>=subjTarget(s)?"💪 "+fmt(v)+". Así se hace.":"Aprobado. Ahora a subir."):"Suspenso. Se aprende y se vuelve más fuerte.");},
     ()=>{T[sid]=L.filter(x=>x.id!==gid);save();closeSheet();renderEst();renderHoy();});
+}
+// nota objetivo de cada asignatura
+function tgtSheet(only){
+  const L=only?S.studies.subjects.filter(x=>x.id===only):S.studies.subjects;
+  openSheet(`<h2>${only?"Nota objetivo · "+esc(L[0].name):"Notas objetivo"}</h2>
+  <p class="hint">La nota que quieres sacar en cada asignatura. Con ella te calculo qué necesitas en el trimestral.</p>
+  ${L.map(x=>`<div class="row" style="margin-top:8px"><span style="flex:1;font-weight:600">${esc(x.name)}</span><div class="row" style="gap:4px"><button class="btn sm" data-tg="-0.5" data-s="${x.id}">−</button><input data-ts="${x.id}" type="number" inputmode="decimal" step="0.5" min="5" max="10" value="${subjTarget(x)}" style="width:70px;text-align:center"><button class="btn sm" data-tg="0.5" data-s="${x.id}">+</button></div></div>`).join("")}
+  ${footer(false)}`);
+  document.querySelectorAll("[data-tg]").forEach(b=>b.onclick=()=>{const i=document.querySelector(`[data-ts="${b.dataset.s}"]`);i.value=Math.min(10,Math.max(5,(parseFloat(i.value)||6)+ +b.dataset.tg));});
+  wire(()=>{document.querySelectorAll("[data-ts]").forEach(i=>{const x=S.studies.subjects.find(y=>y.id===i.dataset.ts),v=parseFloat(String(i.value).replace(",","."));if(x&&!isNaN(v))x.target=Math.min(10,Math.max(0,v));});
+    save();closeSheet();renderEst();toast("🎯 Objetivos guardados");});
 }
 function subjSheet(s){
   const isNew=!s;s=s||{id:"s"+Date.now(),name:""};
