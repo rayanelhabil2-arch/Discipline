@@ -103,6 +103,12 @@ textarea{resize:vertical;line-height:1.45}
 .cal button i{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);display:flex;gap:2px}
 .cal button i b{width:5px;height:5px;border-radius:50%;background:var(--red2)}
 .cal button.sel i b{background:#fff}
+.cal button.ex{background:rgba(214,49,43,.22);box-shadow:inset 0 0 0 1.5px var(--red);color:#fff}
+.cal button.ex::after{content:"!";position:absolute;top:2px;right:5px;font-size:10px;font-weight:900;color:var(--red2)}
+.cal button.ex.sel{background:var(--red)}
+.cal button.ex.sel::after{color:#fff}
+.ev.imp{background:rgba(214,49,43,.12);border:1px solid var(--red);border-radius:10px;padding:10px;margin:6px 0}
+.imp-tag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;background:var(--red);color:#fff;border-radius:4px;padding:2px 6px;margin-bottom:3px}
 .ev{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}.ev:last-child{border-bottom:0}
 .ev .ic{font-size:20px;width:26px;text-align:center}
 .kind{font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;background:var(--line);margin-right:4px;letter-spacing:.05em}
@@ -729,16 +735,18 @@ function renderCal(){
   let h=["L","M","X","J","V","S","D"].map(x=>`<div class="h">${x}</div>`).join("");
   for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const k=key(d);
     if(i>=35&&d.getMonth()!==M) break;
-    const n=S.events.filter(e=>e.date===k).length;
-    h+=`<button data-a="calPick" data-d="${k}" class="${d.getMonth()!==M?"out":""} ${k===t?"td":""} ${k===calSel?"sel":""}">${d.getDate()}${n?`<i>${"<b></b>".repeat(Math.min(3,n))}</i>`:""}</button>`;}
+    const dayEv=S.events.filter(e=>e.date===k&&calVisible(e,t)),n=dayEv.filter(e=>e.type!=="examen").length,isEx=dayEv.some(e=>e.type==="examen");
+    h+=`<button data-a="calPick" data-d="${k}" class="${d.getMonth()!==M?"out":""} ${k===t?"td":""} ${k===calSel?"sel":""} ${isEx?"ex":""}">${d.getDate()}${n?`<i>${"<b></b>".repeat(Math.min(3,n))}</i>`:""}</button>`;}
   $("cal").innerHTML=h;
-  const L=S.events.filter(e=>e.date===calSel).sort((a,b)=>(a.time||"99")<(b.time||"99")?-1:1);
+  const L=S.events.filter(e=>e.date===calSel&&calVisible(e,t)).sort((a,b)=>(a.type==="examen"?0:1)-(b.type==="examen"?0:1)||((a.time||"99")<(b.time||"99")?-1:1));
   $("calDayT").textContent=(calSel===t?"HOY · ":"")+fdate(calSel).toUpperCase();
   $("calDay").innerHTML=L.length?L.map(evRow).join(""):'<div class="hint">Nada este día.</div>';
-  const nx=S.events.filter(e=>e.date>t).sort((a,b)=>(a.date+(a.time||""))<(b.date+(b.time||""))?-1:1).slice(0,4);
+  const nx=S.events.filter(e=>e.date>t&&e.type!=="estudio").sort((a,b)=>(a.date+(a.time||""))<(b.date+(b.time||""))?-1:1).slice(0,4);
   $("calNext").innerHTML=nx.length?'<div class="small" style="margin-bottom:2px">PRÓXIMOS</div>'+nx.map(evRow).join(""):"";
 }
-function evRow(e){const ic=(EVT[e.type]||EVT.otro)[0];return `<div class="ev" data-a="evEdit" data-id="${e.id}" style="cursor:pointer"><span class="ic">${ic}</span><div style="flex:1"><div style="font-weight:700">${esc(e.title)}</div><div class="small">${fdate(e.date)}${e.time?" · "+esc(e.time):""}${e.note?" · "+esc(e.note):""}</div></div></div>`;}
+// lo que hay que estudiar solo se ve el mismo día (ni antes en el calendario ni en «Próximos»)
+function calVisible(e,t){return e.type!=="estudio"||e.date<=t;}
+function evRow(e){const ic=(EVT[e.type]||EVT.otro)[0],imp=e.type==="examen";return `<div class="ev ${imp?"imp":""}" data-a="evEdit" data-id="${e.id}" style="cursor:pointer"><span class="ic">${ic}</span><div style="flex:1">${imp?'<span class="imp-tag">IMPORTANTE</span>':""}<div style="font-weight:700">${esc(e.title)}</div><div class="small">${fdate(e.date)}${e.time?" · "+esc(e.time):""}${e.note?" · "+esc(e.note):""}</div></div></div>`;}
 function evSheet(e){
   const isNew=!e; e=e||{id:"e"+Date.now(),date:calSel||today(),time:"",title:"",type:"otro",note:""};
   openSheet(`<h2>${isNew?"Nuevo evento":"Editar evento"}</h2>
