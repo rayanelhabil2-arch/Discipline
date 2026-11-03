@@ -582,7 +582,21 @@ function renderSyncCard(){
   $("syncHint").textContent=SYNC_KEY?"Tus datos se guardan en tu cuenta privada. Así Claude puede apuntarte cosas en el calendario o tus notas cuando se lo digas, y no pierdes nada si cambias de móvil.":"Ábrela una vez con el enlace privado que te dio Claude para activarla.";
 }
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")pullRemote();});
-setTimeout(pullRemote,300);
+// si el móvil ya tiene notificaciones activadas, la app se conecta sola (sin pegar la clave)
+async function tryPair(){
+  try{
+    if(SYNC_KEY||!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)||Notification.permission!=="granted")return false;
+    const reg=await navigator.serviceWorker.getRegistration(); if(!reg)return false;
+    const sub=await reg.pushManager.getSubscription(); if(!sub)return false;
+    const j=sub.toJSON();
+    const r=await fetch(SB_URL+"/functions/v1/disciplina-pair",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:j.endpoint,auth:j.keys&&j.keys.auth})});
+    const d=await r.json(); if(!d||!d.key)return false;
+    SYNC_KEY=d.key; try{localStorage.setItem("disc.key",SYNC_KEY);}catch(e){}
+    renderSyncCard(); toast("🔐 Sincronización activada sola");
+    return true;
+  }catch(e){return false;}
+}
+setTimeout(async()=>{await tryPair();pullRemote();},300);
 let toastT;function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove("on"),2800);}
 
 // ================= CÁLCULOS =================
