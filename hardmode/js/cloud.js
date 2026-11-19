@@ -2,7 +2,8 @@
 (function () {
   const C = window.HM_CONFIG.SUPABASE;
   const AUTH = window.HM_CONFIG.AUTH_REQUIRED !== false;
-  const MOCK = /[?&]mock=1/.test(location.search) || !window.supabase || !C.url;
+  let MOCK = /[?&]mock=1/.test(location.search) || !C.url;
+  const loadSb = () => new Promise(res => { if (window.supabase) return res(true); const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'; s.async = true; const t = setTimeout(() => res(false), 8000); s.onload = () => { clearTimeout(t); res(true); }; s.onerror = () => { clearTimeout(t); res(false); }; document.head.appendChild(s); });
   let sb = null, user = null, timer = null, ready = false;
 
   // ---------- Simulación local (solo pruebas) ----------
@@ -13,6 +14,7 @@
 
   async function init() {
     if (!AUTH) return null;
+    if (!MOCK && !(await loadSb())) MOCK = true;
     if (MOCK) { const d = mk.db; user = d.session ? { id: d.session, email: d.users[d.session] && d.users[d.session].email } : null; return user; }
     sb = window.supabase.createClient(C.url, C.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
     const { data } = await sb.auth.getSession();
@@ -113,11 +115,12 @@
   }
   async function leaderboard() {
     if (!AUTH) return null;
+    if (!MOCK && !(await loadSb())) MOCK = true;
     if (MOCK) return Object.values(mk.db.profiles).filter(p => p.username && p.onboarded).map(p => ({ username: p.username, streak: p.streak, xp: p.xp })).sort((a, b) => b.streak - a.streak || b.xp - a.xp);
     const { data, error } = await sb.rpc('hm_leaderboard', { lim: 50 });
     return error ? [] : data;
   }
 
   window.addEventListener('pagehide', () => { if (timer) { clearTimeout(timer); push(); } });
-  window.Cloud = { init, signUp, signIn, signOut, resetPass, load, push, queue, finishOnboarding, usernameFree, leaderboard, get user() { return user; }, MOCK, AUTH };
+  window.Cloud = { init, signUp, signIn, signOut, resetPass, load, push, queue, finishOnboarding, usernameFree, leaderboard, get user() { return user; }, get MOCK() { return MOCK; }, AUTH };
 })();

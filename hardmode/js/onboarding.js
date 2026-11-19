@@ -94,11 +94,14 @@
     { id: 'name', run(s) {
       s.innerHTML = `<div class="kick">Identificación</div><div class="big">¿Cómo te llamas?</div>
         <div class="fields"><input class="field" id="n" maxlength="18" autocomplete="given-name" placeholder="Tu nombre" value="${esc(U.S.name)}">
-        <input class="field" id="u" maxlength="20" autocomplete="username" placeholder="@usuario para el ranking" value="${esc(U.S.username)}" autocapitalize="off"></div><div class="err" id="er"></div>${btn('Sigue')}`;
+        <input class="field${Cloud.AUTH ? '' : ' hide'}" id="u" maxlength="20" autocomplete="username" placeholder="@usuario para el ranking" value="${esc(U.S.username)}" autocapitalize="off"></div><div class="err" id="er"></div>${btn('Sigue')}`;
       const n = $('#n', s), u = $('#u', s), g = $('#go', s), er = $('#er', s);
-      const chk = () => { g.disabled = !(n.value.trim() && /^[A-Za-z0-9_.]{3,20}$/.test(u.value.trim())); g.classList.add('show'); er.textContent = u.value && !/^[A-Za-z0-9_.]{3,20}$/.test(u.value.trim()) ? 'Usuario: 3 a 20 letras, números, _ o .' : ''; };
+      const clean = v => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^@/, '').replace(/\s+/g, '_').replace(/[^A-Za-z0-9_.]/g, '').slice(0, 20);
+      u.addEventListener('input', () => { const c = clean(u.value); if (c !== u.value) u.value = c; });
+      const chk = () => { if (!Cloud.AUTH) { g.disabled = !n.value.trim(); g.classList.add('show'); return; } g.disabled = !(n.value.trim() && /^[A-Za-z0-9_.]{3,20}$/.test(u.value.trim())); g.classList.add('show'); er.textContent = u.value && !/^[A-Za-z0-9_.]{3,20}$/.test(u.value.trim()) ? 'Usuario: 3 a 20 letras, números, _ o .' : ''; };
       n.oninput = chk; u.oninput = chk; chk();
-      g.onclick = async () => { const un = u.value.trim(); g.disabled = true; const free = un.toLowerCase() === (U.S.username || '').toLowerCase() || await Cloud.usernameFree(un); g.disabled = false; if (!free) { er.textContent = 'Ese usuario ya está cogido.'; H.thud(); return; } U.S.name = n.value.trim(); U.S.username = un; U.save(); H.tick(); next(); };
+      n.onkeydown = e => { if (e.key === 'Enter' && !g.disabled) g.click(); };
+      g.onclick = async () => { if (!Cloud.AUTH) { U.S.name = n.value.trim(); U.S.username = U.S.username || clean(n.value.trim()).toLowerCase() || 'yo'; U.save(); H.tick(); next(); return; } const un = u.value.trim(); g.disabled = true; const free = un.toLowerCase() === (U.S.username || '').toLowerCase() || await Cloud.usernameFree(un); g.disabled = false; if (!free) { er.textContent = 'Ese usuario ya está cogido.'; H.thud(); return; } U.S.name = n.value.trim(); U.S.username = un; U.save(); H.tick(); next(); };
       later(() => n.focus(), 400);
     } },
     { id: 'age', run(s) {
@@ -131,15 +134,15 @@
       s.innerHTML = `<div class="kick">Objetivos</div><div class="big" style="font-size:38px">Escribe 3 objetivos.<br><em>Sin miedo.</em></div><p class="p">Cosas que quieres conseguir este año. Concretas. Las verás cada día.</p>
         <div class="fields">${[0, 1, 2].map(k => `<div class="fnum"><b>${k + 1}</b><input class="field l" data-k="${k}" maxlength="70" placeholder="${['Ej.: Aprobar todo en junio', 'Ej.: Bajar a 75 kg', 'Ej.: Ahorrar 2.000 €'][k]}" value="${esc(g0[k] || '')}"></div>`).join('')}</div>${btn('Firmar mis objetivos')}`;
       const ins = $$('input', s), g = $('#go', s);
-      const chk = () => { g.disabled = ins.some(x => x.value.trim().length < 3); g.classList.add('show'); };
+      const chk = () => { g.disabled = ins.every(x => x.value.trim().length < 2); g.classList.add('show'); };
       ins.forEach(x => x.oninput = chk); chk();
-      g.onclick = () => { U.S.goals = ins.map(x => x.value.trim()); U.save(); H.thud(); next(); };
+      g.onclick = () => { U.S.goals = ins.map(x => x.value.trim()).filter(Boolean); U.save(); H.thud(); next(); };
     } },
     { id: 'why', top: true, run(s) {
       s.innerHTML = `<div class="kick">El porqué</div><div class="big" style="font-size:38px">¿Por qué lo quieres de verdad?</div><p class="p">Cuando no tengas ganas, esto es lo que leerás.</p>
         <div class="fields"><textarea class="ta" id="w" maxlength="240" style="min-height:110px" placeholder="Quiero demostrar que…">${esc(U.S.why)}</textarea></div>${btn('Sigue')}`;
       const w = $('#w', s), g = $('#go', s);
-      const chk = () => { g.disabled = w.value.trim().length < 6; g.classList.add('show'); };
+      const chk = () => { g.textContent = w.value.trim() ? 'Sigue' : 'Saltar'; g.classList.add('show'); };
       w.oninput = chk; chk();
       g.onclick = () => { U.S.why = w.value.trim(); U.save(); next(); };
     } },
@@ -149,10 +152,10 @@
         <div class="chips">${EX.map(e => `<button class="chip${U.S.excuse === e ? ' on' : ''}">${e}</button>`).join('')}</div>
         <div class="fields"><input class="field l" id="d" maxlength="40" placeholder="¿Quién dudó de ti? (opcional)" value="${esc(U.S.doubter)}"></div>${btn('Sigue', 'white')}`;
       const g = $('#go', s);
-      const chk = () => { g.disabled = !$('.chip.on', s); g.classList.add('show'); };
+      const chk = () => { g.classList.add('show'); };
       $$('.chip', s).forEach(c => c.onclick = () => { $$('.chip', s).forEach(x => x.classList.remove('on')); c.classList.add('on'); H.tick(); tone(300, .05); chk(); });
       chk();
-      g.onclick = () => { U.S.excuse = $('.chip.on', s).textContent; U.S.doubter = $('#d', s).value.trim(); U.save(); next(); };
+      g.onclick = () => { const ch = $('.chip.on', s); U.S.excuse = ch ? ch.textContent : 'Mañana empiezo'; U.S.doubter = $('#d', s).value.trim(); U.save(); next(); };
     } },
     { id: 'areas', top: true, run(s) {
       s.innerHTML = `<div class="kick">Campo de batalla</div><div class="big" style="font-size:38px">¿Dónde vas a pelear?</div><p class="p">Elige hasta 4. Te preparo los hábitos diarios.</p><div class="chips">${D.AREAS.map(a => `<button class="chip${U.S.areas.includes(a.id) ? ' on' : ''}" data-id="${a.id}">${a.em} ${a.name}</button>`).join('')}</div>${btn('Sigue')}`;
@@ -193,7 +196,7 @@
       cv.addEventListener('pointermove', e => {
         if (!drawing) return; const p = pos(e), d = Math.hypot(p.x - last.x, p.y - last.y), v = d / Math.max(1, p.t - last.t);
         ctx.lineWidth = Math.max(1.4, 3.6 - v * 1.4); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
-        ink += d; last = p; if (ink > 140 && !gbtn.classList.contains('show')) { gbtn.classList.add('show'); H.tick(); }
+        ink += d; last = p; if (ink > 60 && !gbtn.classList.contains('show')) { gbtn.classList.add('show'); H.tick(); }
       });
       const end = () => { drawing = false; };
       cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
@@ -211,7 +214,7 @@
     } },
     { id: 'letter', run(s) {
       const y = +(yearsLost() * .55).toFixed(1);
-      const txt = `${U.S.name.toUpperCase()}:\n\nDesde hoy no te pregunto si tienes ganas. Te pregunto si lo has hecho.\n\nLa disciplina no es un día perfecto. Es no fallar dos seguidos.\n\nObjetivo nº 1: ${U.S.goals[0]}.\nTu excusa, «${U.S.excuse}», está muerta.\n\nPuedes recuperar ${String(y).replace('.', ',')} años. Empieza hoy.\n\n— TANK`;
+      const txt = `${U.S.name.toUpperCase()}:\n\nDesde hoy no te pregunto si tienes ganas. Te pregunto si lo has hecho.\n\nLa disciplina no es un día perfecto. Es no fallar dos seguidos.\n\nObjetivo nº 1: ${U.S.goals[0] || 'cumplir cada día'}.\nTu excusa, «${U.S.excuse}», está muerta.\n\nPuedes recuperar ${String(y).replace('.', ',')} años. Empieza hoy.\n\n— TANK`;
       s.innerHTML = `<div class="letter"><div id="lt" style="white-space:pre-line"></div><img class="sigimg" id="sg" src="${U.S.signature}" alt="Tu firma"><div class="seal" id="se">FIRMADO</div></div>${btn('Sigue')}`;
       const lt = $('#lt', s);
       type(lt, txt, { speed: 16, tick: true, done() { const c = $('.caret', lt); c && c.remove(); $('#sg', s).classList.add('on'); later(() => { $('#se', s).classList.add('on'); H.thud(); tone(90, .3, .08); burst(30, ['#FF2A1F', '#fff']); }, 800); later(() => show(s), 1200); } });
