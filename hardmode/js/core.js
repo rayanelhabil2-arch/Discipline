@@ -13,11 +13,11 @@
   const dayIndex = () => Math.floor((new Date() - new Date(2024, 0, 1)) / 864e5);
 
   // Estado
-  const KEY = 'stoa.v1';
-  const DEF = { v: 1, onboarded: false, name: '', age: 18, hours: 4, areas: [], habits: [], log: {}, reviews: {}, retos: {}, xp: 0, focusMin: 0, focusN: 0, lessons: {}, ctlBest: 0, quoteSeen: '', bestStreak: 0, rankSeen: 0, created: dkey() };
+  const KEY = 'hm.v1';
+  const DEF = { v: 1, onboarded: false, name: '', username: '', age: 18, hours: 4, areas: [], goals: ['', '', ''], why: '', excuse: '', doubter: '', habits: [], log: {}, reviews: {}, retos: {}, jar: [], xp: 0, focusMin: 0, focusN: 0, push40: 0, lessons: {}, codeSeen: '', bestStreak: 0, rankSeen: 0, plan: 'free', created: dkey() };
   let S;
   try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = Object.assign({}, DEF); }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } if (window.Cloud) Cloud.queue(); };
 
   // Vibración (Android; en iPhone no hace nada)
   const vib = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) { } };
@@ -63,7 +63,7 @@
   function burst(n, colors) {
     if (reduce) return;
     const b = document.createElement('div'); b.className = 'burst';
-    colors = colors || ['#E8B04A', '#f6d27a', '#2BE07A', '#f4f1ec', '#FF2D3A'];
+    colors = colors || ['#FF2A1F', '#FFD60A', '#ffffff', '#ff7a1f', '#2BE07A'];
     for (let i = 0; i < (n || 46); i++) {
       const p = document.createElement('i'); const a = Math.random() * Math.PI * 2, d = 120 + Math.random() * 220;
       p.style.background = colors[i % colors.length];
@@ -96,7 +96,7 @@
   let tt;
   function toast(title, text, icon) {
     let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
-    t.innerHTML = `<div class="ti">${icon || '🏛️'}</div><div><b>${esc(title)}</b>${esc(text || '')}</div>`;
+    t.innerHTML = `<div class="ti">${icon || '⛓️'}</div><div><b>${esc(title)}</b>${esc(text || '')}</div>`;
     requestAnimationFrame(() => t.classList.add('on'));
     clearTimeout(tt); tt = later(() => t.classList.remove('on'), 3200);
   }
@@ -113,7 +113,7 @@
     return close;
   }
 
-  const bgMode = m => { document.body.classList.remove('alert', 'good', 'gold'); if (m) document.body.classList.add(m); };
+  const bgMode = m => { document.body.classList.remove('alert', 'good', 'gold', 'hazard'); if (m) document.body.classList.add(m); };
 
   window.U = { $, $$, esc, later, every, reduce, dkey, addDays, dayIndex, get S() { return S; }, set S(v) { S = v; }, DEF, KEY, save, H, tone, count, type, burst, hold, toast, sheet, bgMode };
 })();
