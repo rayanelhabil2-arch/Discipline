@@ -3,6 +3,11 @@
    =========================================================== */
 window.HM_CONFIG = {
 
+  /* ---------- CUENTA ----------
+     false = prototipo: se entra sin cuenta y todo se guarda en el móvil.
+     true  = hay que crear cuenta (Supabase) antes de empezar, con ranking real entre usuarios. */
+  AUTH_REQUIRED: false,
+
   /* ---------- CUENTAS (Supabase) ----------
      Tabla: hm_profiles. Clave pública (se puede ver; la seguridad está en las reglas de la base de datos). */
   SUPABASE: {
@@ -34,7 +39,7 @@ window.HM_CONFIG = {
   /* ---------- VÍDEOS ----------
      src: 'videos/archivo.mp4'  o  youtube: 'ID'.  pro: true = solo para quien paga. */
   VIDEOS: [
-    { id: 'v1', title: 'Nadie va a venir a salvarte', tag: 'Mentalidad', dur: '0:58', src: null, youtube: null, poster: null },
+    { id: 'v1', title: 'La disciplina no se siente, se hace', tag: 'Disciplina', dur: '0:58', src: null, youtube: null, poster: null },
     { id: 'v2', title: 'La regla del 40 %', tag: 'Dolor', dur: '1:00', src: null, youtube: null, poster: null, pro: true },
     { id: 'v3', title: 'El espejo no miente', tag: 'Verdad', dur: '0:45', src: null, youtube: null, poster: null, pro: true },
     { id: 'v4', title: 'Callo mental: cómo se hace', tag: 'Dureza', dur: '1:12', src: null, youtube: null, poster: null, pro: true },

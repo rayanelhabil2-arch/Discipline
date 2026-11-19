@@ -7,7 +7,7 @@ window.HM_DATA = {
 
   // Códigos: frases cortas para leer cada día (originales de HARDMODE)
   CODES: [
-    'Nadie va a venir a salvarte. Ni hoy ni nunca. Eres tú.',
+    'Disciplina es elegir lo que quieres más por encima de lo que quieres ahora.',
     'Cuando crees que no puedes más, vas por el 40 %.',
     'Las ganas son para aficionados. Tú tienes horario.',
     'El dolor de hoy es la fuerza de mañana. La comodidad de hoy es la deuda de mañana.',
@@ -71,7 +71,7 @@ window.HM_DATA = {
   ],
 
   TANK: {
-    morning: ['Arriba. Nadie va a hacerlo por ti.', 'El día no te espera. Muévete.', '¿Ganas? No hacen falta.'],
+    morning: ['Arriba. La disciplina empieza en la cama.', 'El día no te espera. Muévete.', '¿Ganas? No hacen falta.'],
     afternoon: ['¿Vas a cumplir o vas a explicar por qué no?', 'Mitad del día. Mitad del trabajo.', 'Te estoy mirando.'],
     night: ['Antes de dormir: el espejo.', 'Lo que no hiciste hoy, mañana el doble.', 'Cierra el día con la verdad.'],
     tap: ['¿Me tocas o te pones a trabajar?', 'Grrr. Vuelve a lo tuyo.', 'Ese hábito no se marca solo.', 'Menos tocar, más sudar.', 'Estoy aquí para que no pares.'],

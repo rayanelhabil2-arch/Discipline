@@ -5,8 +5,9 @@ Web estática (HTML, CSS y JS). Cuentas y datos en Supabase (tabla `hm_profiles`
 **Enlace:** https://rayanelhabil2-arch.github.io/Discipline/hardmode/
 (La app personal Disciplina sigue en la raíz, sin cambios. `/stoa/` redirige aquí.)
 
-- Probar sin servidor (cuentas falsas guardadas en el navegador): añade `?mock=1`.
-- La introducción se ve una sola vez por cuenta; al firmar se marca `onboarded` y la base de datos no deja deshacerlo.
+- **Ahora mismo se entra sin cuenta** (`AUTH_REQUIRED: false` en `js/config.js`): todo se guarda en el móvil y el ranking es una vista previa con usuarios de ejemplo. Pon `true` para exigir cuenta.
+- La introducción se ve una sola vez. Para enseñarla otra vez en un móvil, abre el enlace con `?reset=1` (borra los datos de ese móvil).
+- Con cuentas activadas, `?mock=1` simula cuentas en el navegador para probar sin servidor.
 
 ## Lo que vas a querer cambiar: `js/config.js`
 

@@ -1,6 +1,7 @@
 /* Cuentas y guardado en la nube (Supabase). Con ?mock=1 funciona sin servidor, para pruebas. */
 (function () {
   const C = window.HM_CONFIG.SUPABASE;
+  const AUTH = window.HM_CONFIG.AUTH_REQUIRED !== false;
   const MOCK = /[?&]mock=1/.test(location.search) || !window.supabase || !C.url;
   let sb = null, user = null, timer = null, ready = false;
 
@@ -11,6 +12,7 @@
   };
 
   async function init() {
+    if (!AUTH) return null;
     if (MOCK) { const d = mk.db; user = d.session ? { id: d.session, email: d.users[d.session] && d.users[d.session].email } : null; return user; }
     sb = window.supabase.createClient(C.url, C.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
     const { data } = await sb.auth.getSession();
@@ -91,7 +93,7 @@
     return Object.assign({ data, streak: window.HM_STREAK ? HM_STREAK() : 0, xp: S.xp || 0 }, extra || {});
   }
   async function push(extra) {
-    if (!user || !ready) return;
+    if (!AUTH || !user || !ready) return;
     const p = payload(extra);
     if (MOCK) { const d = mk.db; const old = d.profiles[user.id] || {}; d.profiles[user.id] = Object.assign({ plan: 'free' }, old, p, old.onboarded ? { onboarded: true } : {}); mk.db = d; return { ok: true }; }
     const { error } = await sb.from('hm_profiles').update(p).eq('id', user.id);
@@ -104,16 +106,18 @@
     return push({ onboarded: true, signature, username: U.S.username || null });
   }
   async function usernameFree(u) {
+    if (!AUTH) return true;
     if (MOCK) return !Object.values(mk.db.profiles).some(p => (p.username || '').toLowerCase() === u.toLowerCase());
     const { data, error } = await sb.rpc('hm_username_free', { u });
     return error ? true : !!data;
   }
   async function leaderboard() {
+    if (!AUTH) return null;
     if (MOCK) return Object.values(mk.db.profiles).filter(p => p.username && p.onboarded).map(p => ({ username: p.username, streak: p.streak, xp: p.xp })).sort((a, b) => b.streak - a.streak || b.xp - a.xp);
     const { data, error } = await sb.rpc('hm_leaderboard', { lim: 50 });
     return error ? [] : data;
   }
 
   window.addEventListener('pagehide', () => { if (timer) { clearTimeout(timer); push(); } });
-  window.Cloud = { init, signUp, signIn, signOut, resetPass, load, push, queue, finishOnboarding, usernameFree, leaderboard, get user() { return user; }, MOCK };
+  window.Cloud = { init, signUp, signIn, signOut, resetPass, load, push, queue, finishOnboarding, usernameFree, leaderboard, get user() { return user; }, MOCK, AUTH };
 })();

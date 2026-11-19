@@ -3,7 +3,7 @@
   const { $, $$, esc, later, every, H, tone, count, type, burst, hold, bgMode } = U;
   const D = window.HM_DATA, C = window.HM_CONFIG;
   const LOGO = s => `<svg viewBox="0 0 64 64" width="${s}" height="${s}"><rect x="4" y="4" width="56" height="56" fill="none" stroke="#FF2A1F" stroke-width="3"/><path d="M14 44 L32 26 L50 44" fill="none" stroke="#f5f3ef" stroke-width="6" stroke-linecap="square"/><path d="M14 30 L32 12 L50 30" fill="none" stroke="#FF2A1F" stroke-width="6" stroke-linecap="square"/></svg>`;
-  const ECG = `<svg class="ecg" viewBox="0 0 400 70" preserveAspectRatio="none"><path d="M0 40 H120 L130 40 L138 20 L146 60 L156 6 L166 52 L174 40 H260 L268 34 L274 40 H400"/></svg>`;
+  const ECG = '';
 
   let root, i = 0, steps, onDone;
   const yearsLost = () => +(U.S.hours * (80 - U.S.age) / 24).toFixed(1);
@@ -15,7 +15,7 @@
     const cur = root.firstElementChild;
     if (cur) { cur.classList.add('out'); later(() => cur.remove(), 260); }
     later(() => {
-      const st = steps[i++]; if (!st) return;
+      let st = steps[i++]; while (st && st.skip && st.skip()) st = steps[i++]; if (!st) return;
       const s = document.createElement('section'); s.className = 'scr' + (st.top ? ' top' : '');
       bgMode(st.bg || '');
       root.appendChild(s);
@@ -37,22 +37,19 @@
     { id: 'logo', run(s, go) {
       const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); later(() => f.remove(), 600);
       H.thud(); tone(90, .35, .08);
-      s.innerHTML = `<div class="logo">${LOGO(84)}</div><div class="brand glitch" data-t="HARDMODE">HARD<b>MODE</b></div><div class="brand-sub">Entrena la mente</div>${ECG}`;
+      s.innerHTML = `<div class="logo">${LOGO(84)}</div><div class="brand">HARD<b>MODE</b></div><div class="brand-sub">Disciplina diaria</div>${ECG}`;
       later(go, 2500);
     } },
-    typeScreen('t1', ['Nadie va a venir a salvarte.']),
-    typeScreen('t2', ['Ni tus padres. Ni la motivación. Ni un vídeo.', 'Solo tú. Y lo que hagas hoy.']),
+    typeScreen('t1', ['La motivación se va.', 'La disciplina se queda.']),
+    typeScreen('t2', ['Cada día eliges: lo que quieres ahora o lo que quieres de verdad.', 'Disciplina es elegir bien cuando no apetece.']),
     { id: 'stat', bg: 'alert', run(s) {
       s.innerHTML = `<div class="kick">Dato</div><div class="p" style="margin-top:0">Una persona joven pasa de media</div><div class="hero" id="h">0</div><div class="p">al día con el móvil en la mano. Casi una cuarta parte de su vida despierta.</div>${btn('Sigue', 'white')}`;
       later(() => count($('#h', s), 4.5, { dec: 1, suf: 'H', dur: 1400, done() { H.thud(); $('#app').classList.add('shake-scr'); later(() => $('#app').classList.remove('shake-scr'), 450); show(s); } }), 400);
     } },
     { id: 'raya', bg: 'alert', run(s) {
-      s.innerHTML = `<div class="big">Cada notificación<br>es una <em class="glitch" data-t="raya">raya</em>.</div><div class="line" id="l"></div><p class="p reveal" id="sub">Dopamina gratis. La pagas con tus sueños.</p>${btn('Sigue', 'white')}`;
-      const l = $('#l', s); let h = '';
-      for (let k = 0; k < 160; k++) { const z = 2 + Math.random() * 5; h += `<b style="width:${z}px;height:${z}px;margin:0 ${(Math.random() * 1.6).toFixed(1)}px;transition-delay:${k * 9}ms;opacity:${(.45 + Math.random() * .55).toFixed(2)}"></b>`; }
-      l.innerHTML = h;
-      requestAnimationFrame(() => requestAnimationFrame(() => l.classList.add('go')));
-      let n = 0; const iv = every(() => { H.tick(); tone(180 + n * 22, .04, .015); if (++n >= 14) { clearInterval(iv); H.thud(); $('#sub', s).classList.add('show'); show(s); } }, 80);
+      s.innerHTML = `<div class="big">Cada notificación<br>es una <em>raya</em>.</div><div class="raya"><canvas id="rc"></canvas></div><p class="p reveal" id="sub">Dopamina barata. La pagas con tu disciplina.</p>${btn('Sigue', 'white')}`;
+      let n = 0;
+      Raya.draw($('#rc', s), { onTick: () => { H.tick(); tone(1400 + Math.random() * 600, .02, .008); }, done: () => { H.thud(); $('#sub', s).classList.add('show'); show(s); } });
     } },
     { id: 'slot', bg: 'alert', run(s) {
       const E = ['📱', '💬', '❤️', '🔥', '🎵', '👀'];
@@ -65,7 +62,7 @@
       s.innerHTML = `<div class="p" style="margin-top:0">Cuando tu mente te dice «basta»,<br>solo has dado el</div><div class="hero" id="h" style="color:var(--red)">0</div><div class="big" style="font-size:30px;margin-top:6px">Aquí vas a entrenar<br>el otro <em>60 %</em>.</div>${btn('Quiero entrar')}`;
       count($('#h', s), 40, { suf: '%', dur: 1300, done() { H.thud(); tone(110, .3, .07); show(s); } });
     } },
-    { id: 'auth', bg: 'hazard', run(s) {
+    { id: 'auth', bg: 'hazard', skip: () => !Cloud.AUTH, run(s) {
       s.innerHTML = `<div class="tape run" style="top:calc(var(--st) + 26px)"><span>ZONA RESTRINGIDA · SOLO MIEMBROS · ZONA RESTRINGIDA</span></div>
         <div class="auth"><div class="big" style="font-size:38px;margin:0 auto">Crea tu cuenta</div><p class="p" style="margin:10px auto 0">Tu progreso, tu firma y tu racha se guardan aquí. Si lo dejas, lo verás.</p>
         <div class="tabs2"><button class="on" data-m="up">Crear cuenta</button><button data-m="in">Ya tengo cuenta</button></div>
@@ -214,7 +211,7 @@
     } },
     { id: 'letter', run(s) {
       const y = +(yearsLost() * .55).toFixed(1);
-      const txt = `${U.S.name.toUpperCase()}:\n\nDesde hoy no te pregunto si tienes ganas. Te pregunto si lo has hecho.\n\nObjetivo nº 1: ${U.S.goals[0]}.\nTu excusa, «${U.S.excuse}», está muerta.\n\nPuedes recuperar ${String(y).replace('.', ',')} años. Empieza hoy.\n\n— TANK`;
+      const txt = `${U.S.name.toUpperCase()}:\n\nDesde hoy no te pregunto si tienes ganas. Te pregunto si lo has hecho.\n\nLa disciplina no es un día perfecto. Es no fallar dos seguidos.\n\nObjetivo nº 1: ${U.S.goals[0]}.\nTu excusa, «${U.S.excuse}», está muerta.\n\nPuedes recuperar ${String(y).replace('.', ',')} años. Empieza hoy.\n\n— TANK`;
       s.innerHTML = `<div class="letter"><div id="lt" style="white-space:pre-line"></div><img class="sigimg" id="sg" src="${U.S.signature}" alt="Tu firma"><div class="seal" id="se">FIRMADO</div></div>${btn('Sigue')}`;
       const lt = $('#lt', s);
       type(lt, txt, { speed: 16, tick: true, done() { const c = $('.caret', lt); c && c.remove(); $('#sg', s).classList.add('on'); later(() => { $('#se', s).classList.add('on'); H.thud(); tone(90, .3, .08); burst(30, ['#FF2A1F', '#fff']); }, 800); later(() => show(s), 1200); } });
@@ -240,7 +237,7 @@
       $('#skip', s).onclick = () => { U.S.demoPro = false; U.save(); next(); };
     } },
     { id: 'end', bg: 'good', run(s) {
-      s.innerHTML = `<div id="mc"></div><div class="big" style="margin-top:14px">Bienvenido,<br><em>${esc(U.S.name)}</em>.</div><p class="p">Día 1. El reloj ya corre.</p>${ECG}${btn('Empezar', 'green')}`;
+      s.innerHTML = `<div id="mc"></div><div class="big" style="margin-top:14px">Bienvenido,<br><em>${esc(U.S.name)}</em>.</div><p class="p">Día 1. La disciplina empieza hoy.</p>${ECG}${btn('Empezar', 'green')}`;
       const m = Mascot.mount($('#mc', s), { size: 180, mood: 'happy' });
       later(() => { burst(70); H.success(); m.jump(); tone(660, .1); later(() => tone(990, .2), 120); }, 300);
       later(() => show(s), 900);

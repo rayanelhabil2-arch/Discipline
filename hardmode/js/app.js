@@ -160,7 +160,7 @@
       if (pct() === 100) { burst(90); H.success(); tank.mood('cool').jump().say(pick(D.TANK.all), 4000); }
       else tank.mood(moodNow()).jump().say(pick(D.TANK.done), 1800);
     } else tank.mood(moodNow());
-    if (!before && dayOk(today())) toast('Día salvado', 'Has llegado al 80 %. La racha sigue viva.', '🔥');
+    if (!before && dayOk(today())) toast('Día ganado', 'Has llegado al 80 %. La racha sigue viva.', '🔥');
     const st = streak(); $('#fire').innerHTML = '🔥 ' + st; const sst = $('#sst'); if (sst) sst.textContent = st;
     if (st > (S().bestStreak || 0)) { S().bestStreak = st; U.save(); }
     const rk = rankFor(st); if (rk.idx > rk0 && rk.idx > (S().rankSeen || 0)) { S().rankSeen = rk.idx; U.save(); rankUp(rk.r); }
@@ -168,7 +168,7 @@
   function updProg(first) {
     const p = pct(), n = doneOn(today()).length, tot = S().habits.length;
     const pg = $('#pg'); if (pg) pg.style.width = p + '%';
-    const t = $('#pgt'); if (t) t.textContent = tot ? `${n}/${tot} misiones · mínimo ${need()} para salvar el día` : 'Añade tu primera misión';
+    const t = $('#pgt'); if (t) t.textContent = tot ? `${n}/${tot} misiones · mínimo ${need()} para que el día cuente` : 'Añade tu primera misión';
     const sp = $('#spc'); if (sp) { if (first) count(sp, p, { suf: '%', dur: 800 }); else sp.innerHTML = p + '<small>%</small>'; }
   }
   function rankUp(r) {
@@ -333,8 +333,10 @@
       <div class="card" style="margin-top:10px;display:flex;gap:12px;align-items:center"><div style="font-size:24px">📈</div><div class="sub" style="margin:0">Cada día que cumples sube tu racha. Si fallas dos seguidos, vuelves a cero y bajas en la tabla.</div></div>`;
     wireTop(v);
     await Cloud.push();
-    const rows = await Cloud.leaderboard();
+    let rows = await Cloud.leaderboard(), demo = false;
+    if (rows === null) { demo = true; const me = { username: S().username || 'tú', streak: streak(), xp: S().xp || 0 }; rows = [{ username: 'ejemplo_1', streak: 41, xp: 2380 }, { username: 'ejemplo_2', streak: 27, xp: 1610 }, { username: 'ejemplo_3', streak: 12, xp: 790 }, { username: 'ejemplo_4', streak: 5, xp: 260 }, me].sort((a, b) => b.streak - a.streak || b.xp - a.xp); }
     const box = $('#lbx'); if (!box) return;
+    if (demo) box.insertAdjacentHTML('beforebegin', '<div class="sub" style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;margin-top:10px">VISTA PREVIA · LOS DEMÁS SON DE EJEMPLO HASTA ACTIVAR LAS CUENTAS</div>');
     if (!rows.length) { box.innerHTML = '<div class="sub" style="padding:14px;text-align:center">Aún no hay nadie. Sé el primero.</div>'; return; }
     box.innerHTML = rows.map((r, k) => `<div class="lb${r.username === S().username ? ' me' : ''}"><span class="pos">${k + 1}</span><b>@${esc(r.username)}</b><span class="s">🔥 ${r.streak} · ⚡ ${r.xp}</span></div>`).join('');
   }
@@ -358,9 +360,9 @@
       <div class="card"><div class="sub" style="margin:0 0 6px">80 años. Las rojas ya se fueron. La blanca es esta.</div><canvas id="mm"></canvas><div class="sub" style="margin-top:8px;font-family:var(--mono);font-size:12px">${lived.toLocaleString('es-ES')} vividas · ${Math.max(0, 4174 - lived).toLocaleString('es-ES')} por delante</div></div>
       <div class="sec"><span>Cuenta</span></div>
       <div class="card">
-        <div class="sub" style="margin:0 0 4px">${esc(S().email || (Cloud.user && Cloud.user.email) || '')}</div>
+        <div class="sub" style="margin:0 0 4px">${Cloud.AUTH ? esc(S().email || (Cloud.user && Cloud.user.email) || '') : 'Prototipo sin cuenta: tus datos se guardan en este móvil.'}</div>
         <button class="btn ghost w" id="noti">🔔 Activar avisos</button>
-        <button class="btn ghost w" id="out">Cerrar sesión</button>
+        ${Cloud.AUTH ? '<button class="btn ghost w" id="out">Cerrar sesión</button>' : ''}
       </div>
       <p class="sub" style="text-align:center;margin-top:20px;font-family:var(--mono);font-size:11px">HARDMODE · prototipo${Cloud.MOCK ? ' · modo local' : ''}</p>`;
     wireTop(v);
@@ -369,10 +371,10 @@
     $('#noti', v).onclick = async () => {
       if (!('Notification' in window)) { toast('No disponible', 'En iPhone, añade la app a la pantalla de inicio primero.', '🔔'); return; }
       const p = await Notification.requestPermission();
-      if (p === 'granted') { try { new Notification('HARDMODE', { body: 'TANK: nadie va a venir a salvarte. Abre la app.' }); } catch (e) { } toast('Avisos activados', 'TANK te va a perseguir.', '🔔'); }
+      if (p === 'granted') { try { new Notification('HARDMODE', { body: 'TANK: la disciplina no se negocia. Abre la app.' }); } catch (e) { } toast('Avisos activados', 'TANK te va a perseguir.', '🔔'); }
       else toast('Sin permiso', 'Actívalos en los ajustes del navegador.', '🔔');
     };
-    $('#out', v).onclick = () => sheet(`<h3>¿Cerrar sesión?</h3><p class="p">Tu progreso se queda guardado en tu cuenta.</p><button class="cta" id="y" style="margin-top:16px">Cerrar sesión</button>`, sh => { $('#y', sh).onclick = async () => { await Cloud.push(); Cloud.signOut(); }; });
+    if ($('#out', v)) $('#out', v).onclick = () => sheet(`<h3>¿Cerrar sesión?</h3><p class="p">Tu progreso se queda guardado en tu cuenta.</p><button class="cta" id="y" style="margin-top:16px">Cerrar sesión</button>`, sh => { $('#y', sh).onclick = async () => { await Cloud.push(); Cloud.signOut(); }; });
   }
   function drawMM(lived) {
     const c = $('#mm'); if (!c) return;
@@ -390,6 +392,7 @@
   /* ---------- Arranque ---------- */
   async function boot() {
     const app = $('#app');
+    if (!Cloud.AUTH) { if (/[?&]reset=1/.test(location.search)) { try { localStorage.removeItem(U.KEY); } catch (e) { } U.S = Object.assign({}, U.DEF); history.replaceState(null, '', location.pathname); } if (S().onboarded) start(); else Onboarding.start(app, start); return; }
     let user = null;
     try { user = await Cloud.init(); } catch (e) { console.warn(e); }
     if (user) {
