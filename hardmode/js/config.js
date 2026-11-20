@@ -46,6 +46,10 @@ window.HM_CONFIG = {
     { id: 'v5', title: '5 a. m. sin excusas', tag: 'Rutina', dur: '0:52', src: null, youtube: null, poster: null, pro: true }
   ],
 
+  /* ---------- LEGAL ----------
+     Rellena con tu nombre (o el de tu empresa) y un correo de contacto. Aparecen en legal.html. */
+  LEGAL: { owner: '[Tu nombre o empresa]', contact: '[tu-correo@ejemplo.com]', updated: '20/11/2026' },
+
   /* ---------- ANUNCIOS (solo plan gratis) ----------
      enabled: true + client de AdSense + id de cada bloque. house: patrocinador directo. */
   ADS: { enabled: false, client: '', slots: { hoy: '', guerra: '', foco: '' }, house: null }

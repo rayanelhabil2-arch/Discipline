@@ -42,7 +42,8 @@
     sheet(`<div class="kick" style="margin:0">PRO</div><h3>${esc(reason || 'Pásate a PRO')}</h3>
       <ul class="perks"><li>Hábitos ilimitados</li><li>Modo 40 % sin límite</li><li>Todos los vídeos</li><li>Sin anuncios</li></ul>
       <div class="plans">${P.map(p => `<button class="plan${p === sel ? ' on' : ''}" data-id="${p.id}">${p.best ? '<span class="badge">MÁS ELEGIDO</span>' : ''}<span class="rad"></span><span class="nm"><b>${esc(p.name)}</b><small>${esc(p.trial ? p.trial + ' · ' + p.note : p.note)}</small></span><span class="pr">${esc(p.price)}<small>${esc(p.per)}</small></span></button>`).join('')}</div>
-      <button class="cta" id="pg" style="margin-top:14px">Desbloquear</button>`, (sh, close) => {
+      <button class="cta" id="pg" style="margin-top:14px">Desbloquear</button>
+      <p class="src" style="text-align:center">Cancela cuando quieras. <a href="legal.html" target="_blank" rel="noopener">Privacidad</a> · <a href="legal.html#condiciones" target="_blank" rel="noopener">Condiciones</a></p>`, (sh, close) => {
       $$('.plan', sh).forEach(b => b.onclick = () => { sel = P.find(p => p.id === b.dataset.id); $$('.plan', sh).forEach(x => x.classList.toggle('on', x === b)); H.tick(); });
       $('#pg', sh).onclick = () => {
         if (sel.link) { const u = new URL(sel.link); if (Cloud.user) u.searchParams.set('client_reference_id', Cloud.user.id); location.href = u.toString(); return; }
@@ -70,8 +71,9 @@
     $$('button', nav).forEach(b => b.onclick = () => { H.tick(); go(b.dataset.t); });
     const want = new URLSearchParams(location.search).get('go');
     go(TABS.concat([['tu']]).some(t => t[0] === want) ? want : 'hoy');
-    if (S().habits.length && failedYesterday() && pct() === 0) later(() => toast('Ayer fallaste', 'Hoy es innegociable. Dos seguidos rompen la racha.', '⚠️'), 1200);
+    if (!started) { started = true; U.startReminders(); }
   }
+  let started = false;
   function go(t) {
     curTab = t;
     $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
@@ -88,7 +90,7 @@
   function moodNow() {
     const p = pct(), h = hour();
     if (p === 100) return 'cool';
-    if (failedYesterday() && p < 50) return 'angry';
+    if (failedYesterday() && p < 50) return 'calm';
     if (h < 8 && p === 0) return 'sleepy';
     if (h >= 21 && p < 50) return 'sad';
     if (p >= 50) return 'happy';
@@ -101,10 +103,10 @@
     const retoDone = !!S().retos[today()], flipped = S().codeSeen === today();
     const goals = (S().goals || []).filter(Boolean), gi = dayIndex() % Math.max(1, goals.length);
     v.innerHTML = `${topBar()}
-      ${failedYesterday() && pct() < 100 ? `<div class="tape red" style="position:relative;left:0;right:0;transform:none;margin:0 0 12px;height:34px"><span style="background:var(--red);color:#fff;margin-left:12px">AYER FALLASTE · HOY ES INNEGOCIABLE</span></div>` : ''}
+      ${comebackCard()}
       <div class="hoy-hero">
         <div class="txt"><div class="sub" style="margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.2em">${esc((S().name || '').toUpperCase())} · ${rk.r[1]} ${rk.r[2].toUpperCase()}</div>
-        <div class="h1" style="font-size:58px;margin-top:4px">DÍA <em>${dayN()}</em></div>
+        <div class="h1" style="font-size:clamp(40px,13vw,58px);margin-top:4px">DÍA <em>${dayN()}</em></div>
         <div class="prog"><i id="pg"></i></div><div class="sub" id="pgt" style="font-size:12.5px"></div></div>
         <div id="hm"></div>
       </div>
@@ -113,8 +115,12 @@
         <div class="stat"><b id="spc">0</b><span>HOY</span></div>
         <div class="stat"><b>${rk.nx ? rk.nx[0] - st : '∞'}</b><span>${rk.nx ? 'PARA ' + rk.nx[2].toUpperCase() : 'LEYENDA'}</span></div>
       </div>
+      <div class="sec"><span>Prioridad de hoy</span></div>
+      <div id="prio"></div>
       <div class="sec"><span>Misiones de hoy</span><button id="addh">+ AÑADIR</button></div>
       <div id="hlist"></div>
+      <div class="sec"><span>Tu semana</span></div>
+      <div id="wk7"></div>
       ${goals.length ? `<div class="sec"><span>Por esto peleas</span></div><div class="card" style="border-left:4px solid var(--yel)"><div style="font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--yel);font-weight:700">OBJETIVO ${gi + 1}/${goals.length}</div><div style="font-family:var(--disp);font-size:28px;line-height:1.02;text-transform:uppercase;margin-top:6px">${esc(goals[gi])}</div>${S().why ? `<div class="sub" style="margin-top:8px">«${esc(S().why)}»</div>` : ''}</div>` : ''}
       <div class="sec"><span>Código del día</span></div>
       <div class="flip${flipped ? ' on' : ''}" id="flip"><div class="in">
@@ -130,11 +136,53 @@
     tank = Mascot.mount($('#hm', v), { size: 132, mood: moodNow(), onTap: m => { H.tick(); tone(200, .08); m.jump().say(pick(D.TANK.tap)); } });
     later(() => tank.say(tankLine(), 3600), 700);
     count($('#sst', v), st, { dur: 800 });
-    drawHabits(); updProg(true);
+    drawHabits(); updProg(true); drawPrio(); drawWeek();
     $('#addh', v).onclick = () => editHabit();
+    const cb = $('#cbgo', v); if (cb) cb.onclick = () => { const r = $(`.hab[data-id="${cb.dataset.id}"]`, v); if (r && !r.classList.contains('done')) toggle(r); const c = $('#cb', v); if (c) c.style.display = 'none'; };
     $('#flip', v).onclick = e => { const f = e.currentTarget; if (!f.classList.contains('on')) { f.classList.add('on'); H.thud(); tone(110, .2, .06); if (S().codeSeen !== today()) { S().codeSeen = today(); xp(5); } tank.mood('alert'); later(() => tank.mood(moodNow()), 2200); } else f.classList.remove('on'); };
     $('#reto', v).onclick = e => { if (S().retos[today()]) return; S().retos[today()] = 1; xp(15); U.save(); e.target.className = 'btn w ok'; e.target.textContent = '✓ Reto cumplido · +15 ⚡'; H.success(); burst(36); tank.mood('cool').jump().say('Eso es callo mental.'); later(() => tank.mood(moodNow()), 3000); };
     $('#toMirror', v).onclick = () => go('espejo');
+  }
+
+  // Volver tras faltar un día: sin bronca, con un primer paso pequeño
+  function easiest() {
+    const n = {}; for (let k = 1; k <= 14; k++) (S().log[addDays(today(), -k)] || []).forEach(id => n[id] = (n[id] || 0) + 1);
+    const pend = S().habits.filter(h => !doneOn(today()).includes(h.id));
+    return pend.sort((a, b) => (n[b.id] || 0) - (n[a.id] || 0))[0];
+  }
+  function comebackCard() {
+    if (!S().habits.length || !failedYesterday() || pct() >= 100) return '';
+    const st = streak(), best = Math.max(S().bestStreak || 0, st), e = easiest();
+    const msg = st > 0 ? 'Tu racha sigue viva: un día suelto se perdona. Solo cuenta lo que haces hoy.'
+      : best > 0 ? `La racha se ha reiniciado, pero tu mejor marca, ${best} ${best === 1 ? 'día' : 'días'}, sigue siendo tuya. Hoy empieza la siguiente.`
+      : 'No pasa nada. No hace falta compensar: basta con volver.';
+    return `<div class="card comeback" id="cb"><div class="kick g" style="margin:0 0 6px">Retomar</div><b>Ayer no salió. Hoy vuelves.</b><p>${msg}</p>${e ? `<button class="btn w green" id="cbgo" data-id="${esc(e.id)}">Empieza por lo fácil: ${esc(e.em || '')} ${esc(e.name)}</button>` : ''}</div>`;
+  }
+  // Prioridad del día: una sola cosa importante
+  function drawPrio() {
+    const el = $('#prio'); if (!el) return;
+    const P = S().prio && S().prio.d === today() ? S().prio : null;
+    if (!P) {
+      el.innerHTML = `<div class="card prio"><div class="sub" style="margin:0 0 8px">Lo único que, si lo haces hoy, hace que el día valga la pena.</div><div class="prio-in"><input class="field l" id="pin" maxlength="80" placeholder="Ej.: Estudiar el tema 4 · 1 h"><button class="btn red" id="pset">Fijar</button></div></div>`;
+      const i = $('#pin', el), set = () => { const t = i.value.trim(); if (!t) { i.focus(); return; } S().prio = { d: today(), t, done: false }; U.save(); H.tick(); drawPrio(); };
+      $('#pset', el).onclick = set; i.onkeydown = e => { if (e.key === 'Enter') set(); };
+      return;
+    }
+    el.innerHTML = `<div class="card prio${P.done ? ' ok' : ''}"><div class="prio-t">${P.done ? '✓ ' : '◆ '}${esc(P.t)}</div><div class="row" style="gap:8px;margin-top:10px"><button class="btn ${P.done ? 'ok' : 'green'}" id="pdone" style="flex:1">${P.done ? '✓ Hecho · +15 ⚡' : 'Hecho · +15 ⚡'}</button>${P.done ? '' : '<button class="btn ghost" id="pedit">Cambiar</button>'}</div></div>`;
+    $('#pdone', el).onclick = () => { if (P.done) return; P.done = true; U.save(); xp(15); H.success(); burst(30); if (tank) tank.mood('proud').jump().say('Lo importante, primero.'); drawPrio(); };
+    const pe = $('#pedit', el); if (pe) pe.onclick = () => { S().prio = null; U.save(); drawPrio(); };
+  }
+  // Progreso de los últimos 7 días
+  function drawWeek() {
+    const el = $('#wk7'); if (!el) return;
+    const L = ['D', 'L', 'M', 'X', 'J', 'V', 'S'], days = [];
+    for (let k = 6; k >= 0; k--) { const d = addDays(today(), -k), [y, m, dd] = d.split('-').map(Number); days.push({ l: L[new Date(y, m - 1, dd).getDay()], p: S().habits.length ? doneOn(d).length / S().habits.length : 0, ok: dayOk(d), t: k === 0, pre: d < (S().created || today()) }); }
+    const won = days.filter(x => x.ok).length;
+    let prev = 0; for (let k = 13; k >= 7; k--) if (dayOk(addDays(today(), -k))) prev++;
+    const n = need(), tot = S().habits.length;
+    el.innerHTML = `<div class="card wk7"><div class="wk7-h"><b>${won}/7</b><span>días ganados${S().created && addDays(today(), -7) >= S().created ? ` · semana anterior: ${prev}/7` : ''}</span></div>
+      <div class="wk7-b">${days.map(x => `<div class="${x.t ? 't' : ''}${x.pre ? ' pre' : ''}"><i style="height:${Math.round(6 + x.p * 94)}%" class="${x.ok ? 'ok' : ''}"></i><small>${x.l}</small></div>`).join('')}</div>
+      <div class="sub" style="margin:8px 0 0;font-size:12px">${tot ? `Un día cuenta como ganado cuando completas ${n} de tus ${tot} misiones.` : 'Añade misiones para empezar a contar días.'}</div></div>`;
   }
 
   function habitRow(h, done) {
@@ -155,7 +203,7 @@
     else { d.splice(i, 1); r.classList.remove('done'); xp(-10); H.tick(); }
     U.save();
     const t = r.querySelector('.week i.t'); if (t) t.classList.toggle('y', i < 0);
-    updProg();
+    updProg(); drawWeek();
     if (i < 0) {
       if (pct() === 100) { burst(90); H.success(); tank.mood('cool').jump().say(pick(D.TANK.all), 4000); }
       else tank.mood(moodNow()).jump().say(pick(D.TANK.done), 1800);
@@ -358,22 +406,27 @@
       <div class="card"><div class="sub" style="margin:0">Firmado el ${S().signedAt ? new Date(S().signedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}.</div>${S().signature ? `<div class="sigshow"><img src="${S().signature}" alt="Tu firma"></div>` : ''}</div>
       <div class="sec"><span>Tu vida en semanas</span></div>
       <div class="card"><div class="sub" style="margin:0 0 6px">80 años. Las rojas ya se fueron. La blanca es esta.</div><canvas id="mm"></canvas><div class="sub" style="margin-top:8px;font-family:var(--mono);font-size:12px">${lived.toLocaleString('es-ES')} vividas · ${Math.max(0, 4174 - lived).toLocaleString('es-ES')} por delante</div></div>
-      <div class="sec"><span>Cuenta</span></div>
+      <div class="sec"><span>Recordatorios</span></div>
+      <div class="card"><div class="rem" id="rem">${U.reminders().items.map(r => `<label class="rem-row"><input type="checkbox" data-id="${r.id}"${U.reminders().on && r.on ? ' checked' : ''}><span class="rem-t"><b>${r.label}</b><small>${r.what}</small></span><input type="time" data-t="${r.id}" value="${r.t}"></label>`).join('')}</div>
+        <p class="src" style="margin-bottom:0">Llegan mientras HARDMODE está abierta o instalada. En iPhone, añádela a la pantalla de inicio. ${'Notification' in window ? (Notification.permission === 'granted' ? 'Notificaciones permitidas.' : 'Sin permiso de notificaciones: se muestran dentro de la app.') : 'Este navegador no admite notificaciones: se muestran dentro de la app.'}</p></div>
+      <div class="sec"><span>Ajustes</span></div>
       <div class="card">
-        <div class="sub" style="margin:0 0 4px">${Cloud.AUTH ? esc(S().email || (Cloud.user && Cloud.user.email) || '') : 'Prototipo sin cuenta: tus datos se guardan en este móvil.'}</div>
-        <button class="btn ghost w" id="noti">🔔 Activar avisos</button>
+        <label class="rem-row"><input type="checkbox" id="calm"${U.calm() ? ' checked' : ''}><span class="rem-t"><b>Reducir movimiento</b><small>Sin animaciones, sacudidas ni texto que se escribe solo</small></span></label>
+        <div class="sub" style="margin:10px 0 4px">${Cloud.AUTH ? esc(S().email || (Cloud.user && Cloud.user.email) || '') : 'Prototipo sin cuenta: tus datos se guardan solo en este dispositivo.'}</div>
+        <a class="btn ghost w" href="legal.html" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Privacidad y condiciones</a>
         ${Cloud.AUTH ? '<button class="btn ghost w" id="out">Cerrar sesión</button>' : ''}
       </div>
       <p class="sub" style="text-align:center;margin-top:20px;font-family:var(--mono);font-size:11px">HARDMODE · prototipo${Cloud.MOCK ? ' · modo local' : ''}</p>`;
     wireTop(v);
     Mascot.mount($('#tm', v), { size: 84, mood: st >= 7 ? 'cool' : 'calm', onTap: m => m.jump().say(pick(D.TANK.tap)) });
     drawMM(lived);
-    $('#noti', v).onclick = async () => {
-      if (!('Notification' in window)) { toast('No disponible', 'En iPhone, añade la app a la pantalla de inicio primero.', '🔔'); return; }
-      const p = await Notification.requestPermission();
-      if (p === 'granted') { try { new Notification('HARDMODE', { body: 'TANK: la disciplina no se negocia. Abre la app.' }); } catch (e) { } toast('Avisos activados', 'TANK te va a perseguir.', '🔔'); }
-      else toast('Sin permiso', 'Actívalos en los ajustes del navegador.', '🔔');
+    const saveRem = async () => {
+      const R = U.reminders(), was = R.on; R.items.forEach(r => { r.on = $(`[data-id="${r.id}"]`, v).checked; r.t = $(`[data-t="${r.id}"]`, v).value || r.t; });
+      R.on = R.items.some(r => r.on); S().reminders = R; U.save();
+      if (R.on && !was) { await U.askNotify(); toast('Recordatorios guardados', ' Te aviso a la hora elegida.', '⏰'); }
     };
+    $$('#rem input', v).forEach(i => i.onchange = saveRem);
+    $('#calm', v).onchange = e => { U.setCalm(e.target.checked); H.tick(); };
     if ($('#out', v)) $('#out', v).onclick = () => sheet(`<h3>¿Cerrar sesión?</h3><p class="p">Tu progreso se queda guardado en tu cuenta.</p><button class="cta" id="y" style="margin-top:16px">Cerrar sesión</button>`, sh => { $('#y', sh).onclick = async () => { await Cloud.push(); Cloud.signOut(); }; });
   }
   function drawMM(lived) {

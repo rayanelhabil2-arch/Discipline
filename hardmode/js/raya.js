@@ -7,7 +7,7 @@
 
   function draw(cv, o) {
     o = o || {};
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduce = window.U ? U.calm() : matchMedia('(prefers-reduced-motion: reduce)').matches;
     const dpr = Math.min(2.5, devicePixelRatio || 1);
     const W = cv.clientWidth || 360, Hh = cv.clientHeight || 150;
     cv.width = W * dpr; cv.height = Hh * dpr;

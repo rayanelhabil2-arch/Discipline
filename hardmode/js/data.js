@@ -73,10 +73,10 @@ window.HM_DATA = {
   TANK: {
     morning: ['Arriba. La disciplina empieza en la cama.', 'El día no te espera. Muévete.', '¿Ganas? No hacen falta.'],
     afternoon: ['¿Vas a cumplir o vas a explicar por qué no?', 'Mitad del día. Mitad del trabajo.', 'Te estoy mirando.'],
-    night: ['Antes de dormir: el espejo.', 'Lo que no hiciste hoy, mañana el doble.', 'Cierra el día con la verdad.'],
+    night: ['Antes de dormir: el espejo.', 'Lo que queda pendiente, mañana a primera hora.', 'Cierra el día con la verdad.'],
     tap: ['¿Me tocas o te pones a trabajar?', 'Grrr. Vuelve a lo tuyo.', 'Ese hábito no se marca solo.', 'Menos tocar, más sudar.', 'Estoy aquí para que no pares.'],
     done: ['Eso.', 'Uno menos. Siguiente.', 'Así se endurece la mente.', 'Bien. No te relajes.'],
     all: ['Día ganado. Mañana más duro.', 'Hoy has sido quien dijiste que serías.'],
-    fail: ['Ayer fallaste. Hoy no hay negociación.', 'Un fallo se perdona. Dos, no.']
+    fail: ['Ayer no salió. Pasa. Hoy cuenta igual.', 'Un día suelto no define nada. Vuelve con algo pequeño.', 'No hace falta compensar. Solo volver.']
   }
 };

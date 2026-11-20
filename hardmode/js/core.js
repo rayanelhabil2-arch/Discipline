@@ -5,7 +5,12 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const later = (f, ms) => setTimeout(f, ms);
   const every = (f, ms) => setInterval(f, ms);
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Movimiento reducido: preferencia del sistema o interruptor propio (hm.calm = '1' activa, '0' fuerza animaciones)
+  const sysReduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const calmPref = () => { try { return localStorage.getItem('hm.calm'); } catch (e) { return null; } };
+  const calm = () => { const p = calmPref(); return p === '1' || (p !== '0' && sysReduce); };
+  const setCalm = on => { try { localStorage.setItem('hm.calm', on ? '1' : '0'); } catch (e) { } document.documentElement.classList.toggle('calm', on); };
+  document.documentElement.classList.toggle('calm', calm());
 
   // Fechas en hora local
   const dkey = d => { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -37,7 +42,7 @@
 
   // Contador animado
   function count(el, to, o) {
-    o = o || {}; const dur = reduce ? 1 : (o.dur || 1200), dec = o.dec || 0, from = o.from || 0, t0 = performance.now();
+    o = o || {}; const dur = calm() ? 1 : (o.dur || 1200), dec = o.dec || 0, from = o.from || 0, t0 = performance.now();
     (function f(t) {
       const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3), v = from + (to - from) * e;
       el.innerHTML = (o.pre || '') + v.toFixed(dec).replace('.', ',') + (o.suf ? '<small>' + o.suf + '</small>' : '');
@@ -47,7 +52,7 @@
 
   // Máquina de escribir
   function type(el, text, o) {
-    o = o || {}; const sp = reduce ? 0 : (o.speed || 34); let i = 0;
+    o = o || {}; const sp = calm() ? 0 : (o.speed || 34); let i = 0;
     el.innerHTML = '<span></span><i class="caret"></i>';
     const sp1 = el.firstChild;
     if (!sp) { sp1.textContent = text; o.done && o.done(); return; }
@@ -61,7 +66,7 @@
 
   // Confeti
   function burst(n, colors) {
-    if (reduce) return;
+    if (calm()) return;
     const b = document.createElement('div'); b.className = 'burst';
     colors = colors || ['#FF2A1F', '#FFD60A', '#ffffff', '#ff7a1f', '#2BE07A'];
     for (let i = 0; i < (n || 46); i++) {
@@ -113,7 +118,36 @@
     return close;
   }
 
+  // Recordatorios configurables (funcionan con la app abierta o instalada)
+  const REM = [
+    { id: 'am', label: 'Mañana', what: 'Prioridad del día y hábitos', t: '08:00', on: true },
+    { id: 'pm', label: 'Tarde', what: 'Un bloque de foco', t: '17:30', on: false },
+    { id: 'night', label: 'Noche', what: 'El Espejo, 2 minutos', t: '21:30', on: true }
+  ];
+  const reminders = () => {
+    const cur = S.reminders && S.reminders.items ? S.reminders : { on: false, items: [] };
+    return { on: !!cur.on, items: REM.map(d => Object.assign({}, d, cur.items.find(x => x.id === d.id) || {}, { label: d.label, what: d.what })) };
+  };
+  const askNotify = async () => { try { if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission(); } catch (e) { } };
+  const REM_TXT = { am: ['Buenos días', 'Elige tu prioridad de hoy y marca el primer hábito.'], pm: ['Hora de foco', 'Un bloque de 25 minutos sin móvil. Solo uno.'], night: ['El Espejo', 'Dos minutos: qué hiciste hoy y qué no.'] };
+  function remindTick() {
+    const R = reminders(); if (!R.on) return;
+    const now = new Date(), hm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'), today = dkey();
+    S.remSent = S.remSent || {};
+    R.items.forEach(r => {
+      if (!r.on || S.remSent[r.id] === today || hm < r.t) return;
+      // Solo avisa en los 90 minutos siguientes a la hora elegida
+      const [h, m] = r.t.split(':').map(Number); if ((now.getHours() * 60 + now.getMinutes()) - (h * 60 + m) > 90) return;
+      S.remSent[r.id] = today; save();
+      const [title, body] = REM_TXT[r.id];
+      let shown = false;
+      try { if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') { new Notification('HARDMODE · ' + title, { body, icon: 'icon.svg', tag: 'hm-' + r.id }); shown = true; } } catch (e) { }
+      if (!shown) toast(title, ' ' + body, '⏰');
+    });
+  }
+  const startReminders = () => { remindTick(); setInterval(remindTick, 60000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') remindTick(); }); };
+
   const bgMode = m => { document.body.classList.remove('alert', 'good', 'gold', 'hazard'); if (m) document.body.classList.add(m); };
 
-  window.U = { $, $$, esc, later, every, reduce, dkey, addDays, dayIndex, get S() { return S; }, set S(v) { S = v; }, DEF, KEY, save, H, tone, count, type, burst, hold, toast, sheet, bgMode };
+  window.U = { $, $$, esc, later, every, calm, setCalm, get reduce() { return calm(); }, dkey, addDays, dayIndex, get S() { return S; }, set S(v) { S = v; }, DEF, KEY, save, H, tone, count, type, burst, hold, toast, sheet, bgMode, reminders, askNotify, startReminders };
 })();
