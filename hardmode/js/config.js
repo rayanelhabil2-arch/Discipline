@@ -34,7 +34,7 @@ window.HM_CONFIG = {
      Por defecto, TANK (SVG animado, js/mascot.js). Para usar tu propia mascota:
      sube los PNG a img/mascota/ y rellena image o images (una por estado de ánimo:
      calm, happy, proud, alert, sleepy, sad, cool, focus, angry). */
-  MASCOT: { name: 'TANK', image: null, images: null },
+  MASCOT: { name: 'TANK', image: 'img/tank.webp', images: null },
 
   /* ---------- VÍDEOS ----------
      src: 'videos/archivo.mp4'  o  youtube: 'ID'.  pro: true = solo para quien paga. */

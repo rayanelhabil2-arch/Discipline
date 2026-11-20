@@ -493,3 +493,12 @@ html.calm #bg::before,html.calm .cta::after{animation:none!important}
 .cta{font-size:clamp(17px,5.4vw,22px)}
 @media (max-width:360px){#ob-n{display:none}.obar{gap:4px;padding-left:8px;padding-right:8px}.obar button{font-size:11px;padding:8px 4px}}
 .foot::before{content:"";position:absolute;left:-22px;right:-22px;top:-28px;bottom:calc(-24px - var(--sb));background:linear-gradient(rgba(7,7,7,0),rgba(7,7,7,.92) 40%);z-index:-1;pointer-events:none}
+
+/* Mascota con imagen realista: el estado de ánimo se nota con luz y color */
+.mascot .m-img{filter:drop-shadow(0 10px 24px rgba(0,0,0,.7));transition:filter .5s,transform .5s var(--ease)}
+.mascot[data-mood=angry] .m-img{filter:drop-shadow(0 0 22px rgba(255,42,31,.55)) drop-shadow(0 10px 24px rgba(0,0,0,.7)) contrast(1.08) saturate(1.1);transform:scale(1.03)}
+.mascot[data-mood=alert] .m-img{filter:drop-shadow(0 0 16px rgba(255,214,10,.35)) contrast(1.06)}
+.mascot[data-mood=happy] .m-img,.mascot[data-mood=proud] .m-img,.mascot[data-mood=cool] .m-img{filter:drop-shadow(0 0 22px rgba(255,180,60,.45)) drop-shadow(0 10px 24px rgba(0,0,0,.7)) brightness(1.06)}
+.mascot[data-mood=sleepy] .m-img{filter:brightness(.55) saturate(.6) drop-shadow(0 10px 24px rgba(0,0,0,.7))}
+.mascot[data-mood=sad] .m-img{filter:grayscale(.55) brightness(.8) drop-shadow(0 10px 24px rgba(0,0,0,.7))}
+.mascot[data-mood=focus] .m-img{filter:contrast(1.1) drop-shadow(0 10px 24px rgba(0,0,0,.7))}
