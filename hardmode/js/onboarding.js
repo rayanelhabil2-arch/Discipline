@@ -103,10 +103,10 @@
     { id: 'about', top: true, run(s) {
       s.innerHTML = `<div class="kick">Qué es HARDMODE</div><div class="big md">Un entrenamiento diario de <em>disciplina</em>.</div>
         <div class="about">
-          <div><b>Qué entrenas</b><span>Cumplir lo que te prometes aunque no apetezca, concentrarte sin el móvil y volver rápido cuando fallas.</span></div>
+          <div><b>Qué entrenas</b><span>Cumplir aunque no apetezca, concentrarte sin el móvil y volver rápido cuando fallas.</span></div>
           <div><b>Tu rutina</b><span><i>Mañana · 1 min</i> Tu prioridad del día y tus hábitos.<br><i>Durante el día</i> Bloques de foco con temporizador.<br><i>Noche · 2 min</i> El Espejo: qué hiciste y qué no.</span></div>
-          <div><b>La primera semana</b><span>De 2 a 4 hábitos pequeños, tu racha y tu progreso a la vista, y avisos a la hora que tú elijas. Si fallas un día, no pierdes la racha: retomas.</span></div>
-          <div><b>Precio</b><span>Empezar es gratis. Hay un plan PRO opcional; te lo enseñamos al final y puedes seguir sin pagar.</span></div>
+          <div><b>La primera semana</b><span>De 2 a 4 hábitos pequeños, tu progreso a la vista y avisos a tu hora. Fallar un día no rompe la racha.</span></div>
+          <div><b>Precio</b><span>Gratis para empezar. PRO es opcional.</span></div>
         </div>${btn('Empezar mi plan · 2 min')}`;
       show(s);
     } },
