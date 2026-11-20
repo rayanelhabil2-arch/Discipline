@@ -70,7 +70,8 @@
     { id: 'logo', auto: true, run(s, go) {
       const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); later(() => f.remove(), 600);
       H.thud(); tone(90, .35, .08);
-      s.innerHTML = `<div class="logo">${LOGO(84)}</div><div class="brand">HARD<b>MODE</b></div><div class="brand-sub">Disciplina diaria</div>`;
+      s.innerHTML = `<div class="logo" id="lg"></div><div class="brand">HARD<b>MODE</b></div><div class="brand-sub">Disciplina diaria</div>`;
+      Mascot.mount($('#lg', s), { size: 150, mood: 'angry' });
       later(go, U.calm() ? 1200 : 2500);
     } },
     typeScreen('t1', ['La motivación se va.', 'La disciplina se queda.']),
