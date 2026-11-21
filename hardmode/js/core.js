@@ -22,7 +22,7 @@
   const DEF = { v: 1, onboarded: false, name: '', username: '', age: 18, hours: 4, areas: [], goals: ['', '', ''], why: '', excuse: '', doubter: '', habits: [], log: {}, reviews: {}, retos: {}, jar: [], xp: 0, focusMin: 0, focusN: 0, push40: 0, lessons: {}, codeSeen: '', bestStreak: 0, rankSeen: 0, plan: 'free', created: dkey() };
   let S;
   try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = Object.assign({}, DEF); }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } if (window.Cloud) Cloud.queue(); };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } if (window.Cloud) Cloud.queue(); if (window.Rank) Rank.queue(); };
 
   // Vibración (Android; en iPhone no hace nada)
   const vib = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) { } };

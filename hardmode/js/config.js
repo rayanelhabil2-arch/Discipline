@@ -48,7 +48,7 @@ window.HM_CONFIG = {
 
   /* ---------- LEGAL ----------
      Rellena con tu nombre (o el de tu empresa) y un correo de contacto. Aparecen en legal.html. */
-  LEGAL: { owner: '[Tu nombre o empresa]', contact: '[tu-correo@ejemplo.com]', updated: '20/11/2026' },
+  LEGAL: { owner: 'Duolab (HARDMODE)', contact: 'duolab.suport@gmail.com', updated: '21/11/2026' },
 
   /* ---------- ANUNCIOS (solo plan gratis) ----------
      enabled: true + client de AdSense + id de cada bloque. house: patrocinador directo. */

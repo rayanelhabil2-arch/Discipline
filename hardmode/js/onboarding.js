@@ -107,8 +107,9 @@
           <div><b>Tu rutina</b><span><i>Mañana · 1 min</i> Tu prioridad del día y tus hábitos.<br><i>Durante el día</i> Bloques de foco con temporizador.<br><i>Noche · 2 min</i> El Espejo: qué hiciste y qué no.</span></div>
           <div><b>La primera semana</b><span>De 2 a 4 hábitos pequeños, tu progreso a la vista y avisos a tu hora. Fallar un día no rompe la racha.</span></div>
           <div><b>Precio</b><span>Gratis para empezar. PRO es opcional.</span></div>
-        </div>${btn('Empezar mi plan · 2 min')}`;
+        </div>${btn('Empezar mi plan · 2 min', '', '<button class="cta ghost" id="login">Ya tengo cuenta · Entrar</button>')}`;
       show(s);
+      $('#login', s).onclick = () => { Onboarding.wantLogin = true; goto('account'); };
     } },
     { id: 'auth', bg: 'hazard', when: () => Cloud.AUTH, run(s) {
       s.innerHTML = `<div class="tape run" style="top:calc(var(--st) + 26px)"><span>ZONA RESTRINGIDA · SOLO MIEMBROS · ZONA RESTRINGIDA</span></div>
@@ -152,6 +153,33 @@
       n.onkeydown = e => { if (e.key === 'Enter' && !g.disabled) g.click(); };
       g.onclick = async () => { if (!Cloud.AUTH) { U.S.name = n.value.trim(); U.S.username = U.S.username || clean(n.value.trim()).toLowerCase() || 'yo'; U.save(); H.tick(); next(); return; } const un = u.value.trim(); g.disabled = true; const free = un.toLowerCase() === (U.S.username || '').toLowerCase() || await Cloud.usernameFree(un); g.disabled = false; if (!free) { er.textContent = 'Ese usuario ya está cogido.'; H.thud(); return; } U.S.name = n.value.trim(); U.S.username = un; U.save(); H.tick(); next(); };
       if (matchMedia('(min-width: 700px)').matches) later(() => n.focus(), 400);
+    } },
+    { id: 'account', top: true, sk: true, run(s) {
+      let mode = s.dataset.mode || (Onboarding.wantLogin ? 'in' : 'up'); Onboarding.wantLogin = false;
+      const me = Rank.me;
+      if (me && me.acc) { s.innerHTML = `<div class="kick">Cuenta</div><div class="big md">Ya tienes cuenta</div><p class="p">Entras como <b>@${esc(me.username)}</b>. Tu progreso se guarda solo.</p>${btn('Sigue')}`; show(s); return; }
+      s.innerHTML = `<div class="kick">Cuenta</div><div class="big md">${mode === 'up' ? 'Crea tu cuenta' : 'Entra en tu cuenta'}</div>
+        <p class="p">Solo usuario y contraseña. Sirve para competir en el ranking y para no perder tu progreso si cambias de móvil.</p>
+        <div class="tabs2"><button class="${mode === 'up' ? 'on' : ''}" data-m="up">Crear cuenta</button><button class="${mode === 'in' ? 'on' : ''}" data-m="in">Ya tengo cuenta</button></div>
+        <div class="fields"><input class="field l" id="au" maxlength="20" autocomplete="username" autocapitalize="off" placeholder="@usuario" value="${esc(Rank.clean(U.S.username || U.S.name || ''))}">
+        <input class="field l" id="ap" type="password" maxlength="72" autocomplete="${mode === 'up' ? 'new-password' : 'current-password'}" placeholder="Contraseña (mín. 6)"></div>
+        <div class="err" id="ae"></div>
+        <p class="why-note">${mode === 'up' ? 'En el ranking solo se ve tu @usuario, tu racha y tus puntos.' : ''} ¿Has olvidado la contraseña? Escríbenos a <a href="mailto:${Rank.SUPPORT}">${Rank.SUPPORT}</a> desde el correo que quieras, con tu @usuario.<br>${LEGAL}</p>
+        ${btn(mode === 'up' ? 'Crear cuenta' : 'Entrar')}`;
+      const au = $('#au', s), ap = $('#ap', s), ae = $('#ae', s), g = $('#go', s);
+      au.oninput = () => { const c = Rank.clean(au.value); if (c !== au.value) au.value = c; };
+      $$('.tabs2 button', s).forEach(b => b.onclick = () => { s.dataset.mode = b.dataset.m; H.tick(); steps[cur].run(s); });
+      show(s);
+      const submit = async () => {
+        ae.textContent = ''; g.disabled = true; g.innerHTML = '<span class="spin"></span>';
+        const r = mode === 'up' ? await Rank.register(au.value, ap.value) : await Rank.login(au.value, ap.value);
+        g.disabled = false; g.textContent = mode === 'up' ? 'Crear cuenta' : 'Entrar';
+        if (r.error) { ae.textContent = r.error; H.thud(); return; }
+        H.success();
+        if (r.restored) { U.toast('Bienvenido de vuelta', ' Hemos recuperado tu progreso.', '🦁'); finish(); return; }
+        U.toast(mode === 'up' ? 'Cuenta creada' : 'Has entrado', ' Tu progreso se guarda en tu cuenta.', '🦁'); next();
+      };
+      g.onclick = submit; ap.onkeydown = e => { if (e.key === 'Enter') submit(); };
     } },
     { id: 'age', run(s) {
       s.innerHTML = `<div class="kick">${esc(U.S.name)}</div><div class="big">¿Cuántos años tienes?</div><div class="hero" id="v" style="margin-top:20px">${U.S.age}</div><input type="range" class="range" id="r" min="12" max="60" step="1" value="${U.S.age}">${btn('Sigue')}`;
@@ -218,6 +246,14 @@
         U.S.habits = U.S.areas.map(id => { const a = D.AREAS.find(x => x.id === id); return { id: a.id, name: a.habit, em: a.em }; });
         U.save(); next();
       };
+    } },
+    { id: 'life', top: true, sk: true, run(s) {
+      const O = [['train', '🏋️', 'Mis entrenos', 'Con fotos, para ver tu progreso'], ['work', '💼', 'Mi trabajo', 'Horas, horas extra y cuánto cobras'], ['study', '📚', 'Mis estudios', 'Bloques de foco sin móvil']];
+      const cur = U.S.track || [];
+      s.innerHTML = `<div class="kick">Tu día a día</div><div class="big md">¿Qué quieres llevar controlado?</div><p class="p">Elige lo que encaje contigo. Adaptamos la app a ti.</p>
+        <div class="rem">${O.map(o => `<label class="rem-row"><input type="checkbox" data-k="${o[0]}"${cur.includes(o[0]) ? ' checked' : ''}><span class="rem-t"><b>${o[1]} ${o[2]}</b><small>${o[3]}</small></span></label>`).join('')}</div>${btn('Sigue')}`;
+      show(s);
+      $('#go', s).onclick = () => { U.S.track = $$('input:checked', s).map(x => x.dataset.k); U.save(); H.tick(); next(); };
     } },
     { id: 'remind', top: true, sk: true, run(s) {
       const R = U.reminders();
@@ -315,6 +351,6 @@
   window.Onboarding = {
     // from: id del paso inicial (p. ej. 'auth' o 'name')
     start(el, done, from) { root = el; onDone = done; cur = -1; hist = []; if (!bar) mountBar(); if (from) { const k = steps.findIndex(x => x.id === from); if (k >= 0) return render(k); } next(); },
-    goto
+    goto, wantLogin: false
   };
 })();

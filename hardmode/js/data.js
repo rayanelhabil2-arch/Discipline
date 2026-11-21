@@ -78,5 +78,13 @@ window.HM_DATA = {
     done: ['Eso.', 'Uno menos. Siguiente.', 'Así se endurece la mente.', 'Bien. No te relajes.'],
     all: ['Día ganado. Mañana más duro.', 'Hoy has sido quien dijiste que serías.'],
     fail: ['Ayer no salió. Pasa. Hoy cuenta igual.', 'Un día suelto no define nada. Vuelve con algo pequeño.', 'No hace falta compensar. Solo volver.']
+  },
+  // Vídeos cortos hechos con texto animado (se usan mientras no subas un vídeo real a ese hueco)
+  REELS: {
+    v1: ['Las ganas no vienen.', 'Nunca han venido.', 'Los que cumplen no se sienten mejor que tú.', 'Simplemente no se preguntan si les apetece.', 'Disciplina es hacer lo que dijiste…', '…mucho después de que se fuera el humor con el que lo dijiste.', 'Hoy no necesitas motivación.', 'Necesitas empezar. Dos minutos.', 'El resto viene solo.'],
+    v2: ['Cuando tu cabeza dice «basta»…', '…casi nunca es tu límite real.', 'Es una alarma. Salta antes de tiempo para protegerte.', 'La regla del 40 % es una idea, no un dato científico.', 'Pero la sensación es real: tienes más de lo que crees.', 'Úsala con cabeza.', 'Para no rendirte en una tarea aburrida, sí.', 'Para ignorar una lesión, nunca.', 'Hoy, cuando quieras parar, haz cinco minutos más.'],
+    v3: ['Mírate.', '¿Hiciste hoy lo que dijiste que harías?', 'No lo que planeaste. Lo que hiciste.', 'El espejo no juzga.', 'Solo enseña.', 'Si mientes al espejo, el único engañado eres tú.', 'Dos minutos cada noche.', 'Verdad. Sin adornos.', 'Mañana, mejor.'],
+    v4: ['El callo mental se hace igual que el de las manos.', 'Repetición. Roce. Constancia.', 'Ducha fría.', 'Levantarte a la primera.', 'Dejar el móvil en otra habitación.', 'Pequeñas incomodidades elegidas.', 'Cada una es una prueba de que puedes.', 'Y un día, lo difícil ya no te para.', 'Elige una incomodidad hoy.'],
+    v5: ['La alarma suena.', 'Tu cabeza empieza a negociar.', '«Cinco minutos más».', 'Ahí se decide tu día.', 'No discutas. Muévete.', 'Pies al suelo antes de pensar.', 'Agua. Luz. Ropa.', 'La primera victoria del día es la más fácil.', 'Y es la que arrastra a las demás.']
   }
 };

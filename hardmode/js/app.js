@@ -61,28 +61,36 @@
     arsenal: '<svg viewBox="0 0 24 24"><path d="M5 19L19 5"/><path d="M15 5h4v4"/><path d="M5 5l14 14"/><path d="M5 15v4h4"/></svg>',
     rank: '<svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M6 20v-6h4v6M10 20V9h4v11M14 20v-8h4v8"/></svg>'
   };
-  const TABS = [['hoy', 'Hoy'], ['espejo', 'Espejo'], ['foco', 'Foco'], ['arsenal', 'Arsenal'], ['rank', 'Ranking']];
+  ICONS.diario = '<svg viewBox="0 0 24 24"><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6z"/><path d="M6 3v18"/><path d="M10 8h5M10 12h5"/></svg>';
+  ICONS.mas = '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg>';
+  const TABS = [['hoy', 'Hoy'], ['diario', 'Diario'], ['foco', 'Foco'], ['rank', 'Ranking'], ['mas', 'Menú']];
+  // Secciones a las que se llega desde el menú (la pestaña «Menú» queda marcada)
+  const SUBS = ['espejo', 'arsenal', 'metas', 'estudios', 'tu'];
+  const VIEWS = TABS.map(t => t[0]).concat(SUBS);
 
   function start() {
     const app = $('#app');
-    app.innerHTML = `<div class="main scr" id="main">${TABS.concat([['tu']]).map(t => `<section class="view" id="v-${t[0]}"></section>`).join('')}</div>`;
+    app.innerHTML = `<div class="main scr" id="main">${VIEWS.map(t => `<section class="view" id="v-${t}"></section>`).join('')}</div>`;
     let nav = $('nav.tabs'); if (!nav) { nav = document.createElement('nav'); nav.className = 'tabs'; document.body.appendChild(nav); }
     nav.innerHTML = TABS.map(t => `<button data-t="${t[0]}">${ICONS[t[0]]}${t[1]}</button>`).join('');
     $$('button', nav).forEach(b => b.onclick = () => { H.tick(); go(b.dataset.t); });
     const want = new URLSearchParams(location.search).get('go');
-    go(TABS.concat([['tu']]).some(t => t[0] === want) ? want : 'hoy');
+    go(VIEWS.includes(want) ? want : 'hoy');
     if (!started) { started = true; U.startReminders(); }
   }
   let started = false;
   function go(t) {
     curTab = t;
-    $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+    const navT = SUBS.includes(t) ? 'mas' : t;
+    $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === navT));
     $$('.view').forEach(v => { const on = v.id === 'v-' + t; v.classList.toggle('on', on); if (!on) v.innerHTML = ''; });
-    ({ hoy: renderHoy, espejo: renderEspejo, foco: renderFoco, arsenal: renderArsenal, rank: renderRank, tu: renderTu })[t]();
+    ({ hoy: renderHoy, espejo: renderEspejo, foco: renderFoco, diario: () => Diario.render($('#v-diario'), { topBar, wireTop, xp }), arsenal: renderArsenal, rank: renderRank, tu: renderTu, mas: () => Mas.renderMenu($('#v-mas'), mctx), metas: () => Mas.renderMetas($('#v-metas'), mctx), estudios: () => Mas.renderEstudios($('#v-estudios'), mctx) })[t]();
+    if (['espejo', 'arsenal', 'tu'].includes(t)) { const tp = $('#v-' + t + ' .top'); if (tp && !$('#v-' + t + ' .back-mas')) { tp.insertAdjacentHTML('afterend', '<button class="back-mas">‹ Menú</button>'); $('#v-' + t + ' .back-mas').onclick = () => { H.tick(); go('mas'); }; } }
     $('#main').scrollTop = 0;
     pushAds();
   }
   const refresh = () => go(curTab);
+  const mctx = { get topBar() { return topBar; }, get wireTop() { return wireTop; }, get xp() { return xp; }, go: t => go(t) };
   const topBar = () => `<div class="top"><div class="mark">HARD<b>MODE</b></div><div class="row"><span class="pill fire" id="fire">🔥 ${streak()}</span><span class="pill" id="xp">⚡ ${S().xp || 0}</span>${isPro() ? '<span class="pill pro">PRO</span>' : ''}<button class="pill" id="me" aria-label="Perfil">👤</button></div></div>`;
   function wireTop(v) { const m = $('#me', v); if (m) m.onclick = () => { H.tick(); go('tu'); }; }
 
@@ -119,6 +127,7 @@
       <div id="prio"></div>
       <div class="sec"><span>Misiones de hoy</span><button id="addh">+ AÑADIR</button></div>
       <div id="hlist"></div>
+      ${(S().track || []).some(k => k === 'train' || k === 'work') ? `<div class="quick">${(S().track || []).includes('train') ? '<button class="card qk" data-q="train"><span>🏋️</span><b>Subir entreno</b></button>' : ''}${(S().track || []).includes('work') ? `<button class="card qk" data-q="work"><span>💼</span><b>${S().clockIn ? 'Fichado · salir' : 'Fichar jornada'}</b></button>` : ''}</div>` : ''}
       <div class="sec"><span>Tu semana</span></div>
       <div id="wk7"></div>
       ${goals.length ? `<div class="sec"><span>Por esto peleas</span></div><div class="card" style="border-left:4px solid var(--yel)"><div style="font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--yel);font-weight:700">OBJETIVO ${gi + 1}/${goals.length}</div><div style="font-family:var(--disp);font-size:28px;line-height:1.02;text-transform:uppercase;margin-top:6px">${esc(goals[gi])}</div>${S().why ? `<div class="sub" style="margin-top:8px">«${esc(S().why)}»</div>` : ''}</div>` : ''}
@@ -138,6 +147,7 @@
     count($('#sst', v), st, { dur: 800 });
     drawHabits(); updProg(true); drawPrio(); drawWeek();
     $('#addh', v).onclick = () => editHabit();
+    $$('.qk', v).forEach(b => b.onclick = () => { Diario.seg = b.dataset.q; go('diario'); });
     const cb = $('#cbgo', v); if (cb) cb.onclick = () => { const r = $(`.hab[data-id="${cb.dataset.id}"]`, v); if (r && !r.classList.contains('done')) toggle(r); const c = $('#cb', v); if (c) c.style.display = 'none'; };
     $('#flip', v).onclick = e => { const f = e.currentTarget; if (!f.classList.contains('on')) { f.classList.add('on'); H.thud(); tone(110, .2, .06); if (S().codeSeen !== today()) { S().codeSeen = today(); xp(5); } tank.mood('alert'); later(() => tank.mood(moodNow()), 2200); } else f.classList.remove('on'); };
     $('#reto', v).onclick = e => { if (S().retos[today()]) return; S().retos[today()] = 1; xp(15); U.save(); e.target.className = 'btn w ok'; e.target.textContent = '✓ Reto cumplido · +15 ⚡'; H.success(); burst(36); tank.mood('cool').jump().say('Eso es callo mental.'); later(() => tank.mood(moodNow()), 3000); };
@@ -351,7 +361,7 @@
     const v = $('#v-arsenal'), vids = C.VIDEOS || [];
     v.innerHTML = `${topBar()}<div class="h1">Arsenal</div><div class="sub">Vídeos, lecciones y retos para endurecer la mente.</div>
       <div class="sec"><span>Vídeos</span></div>
-      <div class="feed">${vids.map((x, k) => `<button class="vid${x.src || x.youtube ? '' : ' soon'}" data-k="${k}">${x.poster ? `<img src="${esc(x.poster)}" alt="">` : `<span class="glyph">${String(k + 1).padStart(2, '0')}</span>`}${x.pro && !isPro() ? '<span class="lock">PRO</span>' : ''}<span class="play"></span><span class="tg">${esc(x.tag || '')}</span><b>${esc(x.title)}</b><small>${x.src || x.youtube ? esc(x.dur || '') : 'PRÓXIMAMENTE'}</small></button>`).join('')}</div>
+      <div class="feed">${vids.map((x, k) => `<button class="vid${x.src || x.youtube || (D.REELS && D.REELS[x.id]) ? '' : ' soon'}" data-k="${k}">${x.poster ? `<img src="${esc(x.poster)}" alt="">` : `<span class="glyph">${String(k + 1).padStart(2, '0')}</span>`}${x.pro && !isPro() ? '<span class="lock">PRO</span>' : ''}<span class="play"></span><span class="tg">${esc(x.tag || '')}</span><b>${esc(x.title)}</b><small>${x.src || x.youtube ? esc(x.dur || '') : D.REELS && D.REELS[x.id] ? (S().reelsSeen && S().reelsSeen[x.id] ? '✓ VISTO' : 'VÍDEO CORTO · 40 S') : 'PRÓXIMAMENTE'}</small></button>`).join('')}</div>
       <div class="sec"><span>Lecciones de 1 minuto</span></div>
       <div>${D.LESSONS.map((l, k) => `<button class="lesson${S().lessons[k] ? ' done' : ''}" data-k="${k}"><div class="n">${S().lessons[k] ? '✓' : k + 1}</div><div style="flex:1"><b>${esc(l.t)}</b><div class="sub" style="margin:2px 0 0">${S().lessons[k] ? 'Leída' : '1 min · +10 ⚡'}</div></div></button>`).join('')}</div>
       ${ad('guerra')}
@@ -363,9 +373,30 @@
   }
   function openVideo(x) {
     if (x.pro && !isPro()) { paywall('Este vídeo es PRO'); return; }
-    if (!x.src && !x.youtube) { toast('Próximamente', `«${x.title}» llega pronto.`, '🎬'); return; }
+    if (!x.src && !x.youtube) { if (D.REELS && D.REELS[x.id]) return playReel(x); toast('Próximamente', `«${x.title}» llega pronto.`, '🎬'); return; }
     const media = x.youtube ? `<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(x.youtube)}?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>` : `<video src="${esc(x.src)}" ${x.poster ? `poster="${esc(x.poster)}"` : ''} controls autoplay playsinline></video>`;
     sheet(`<div class="kick" style="margin:0">${esc(x.tag || '')}</div><h3>${esc(x.title)}</h3>${media}`, sh => { const vd = $('video', sh); if (vd) vd.onended = () => { xp(5); toast('Vídeo visto', '+5 ⚡', '🎬'); }; });
+  }
+  // Reproductor de vídeos de texto: tarjetas a pantalla completa, toca para avanzar
+  function playReel(x) {
+    const L = D.REELS[x.id], el = document.createElement('div'); let i = 0, t = null, done = false;
+    el.className = 'reel'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', x.title);
+    el.innerHTML = `<div class="reel-bars">${L.map(() => '<i><b></b></i>').join('')}</div><button class="reel-x" aria-label="Cerrar">✕</button><div class="reel-tag">${esc(x.tag || '')} · ${esc(x.title)}</div><div class="reel-t" id="rt"></div><div class="reel-m" id="rm"></div><div class="reel-hint">Toca para avanzar</div>`;
+    document.body.appendChild(el);
+    const m = Mascot.mount($('#rm', el), { size: 110, mood: 'focus' });
+    const close = () => { clearTimeout(t); el.remove(); };
+    const show = k => {
+      clearTimeout(t); i = k;
+      if (i >= L.length) { if (!done) { done = true; S().reelsSeen = S().reelsSeen || {}; if (!S().reelsSeen[x.id]) { S().reelsSeen[x.id] = 1; xp(5); toast('Vídeo visto', ' +5 ⚡', '🎬'); } } close(); return; }
+      $$('.reel-bars i', el).forEach((b, j) => { b.className = j < i ? 'full' : j === i ? 'run' : ''; });
+      const rt = $('#rt', el); rt.classList.remove('in'); void rt.offsetWidth; rt.textContent = L[i]; rt.classList.add('in');
+      if (i === L.length - 1) m.mood('angry').jump(); else if (i % 3 === 0) m.mood('alert');
+      const dur = Math.max(2600, 900 + L[i].length * 55); $$('.reel-bars i b', el)[i].style.animationDuration = dur + 'ms';
+      H.tick(); t = later(() => show(i + 1), dur);
+    };
+    el.addEventListener('click', e => { if (e.target.closest('.reel-x')) return close(); const r = el.getBoundingClientRect(); show(e.clientX < r.width * .3 ? Math.max(0, i - 1) : i + 1); });
+    document.addEventListener('keydown', function k(e) { if (!el.isConnected) return document.removeEventListener('keydown', k); if (e.key === 'Escape') close(); if (e.key === 'ArrowRight' || e.key === ' ') show(i + 1); if (e.key === 'ArrowLeft') show(Math.max(0, i - 1)); });
+    show(0);
   }
   function openLesson(k) {
     const l = D.LESSONS[k];
@@ -375,18 +406,40 @@
   }
 
   /* ---------- RANKING ---------- */
+  let rankSort = 'streak', joinMode = 'up';
   async function renderRank() {
-    const v = $('#v-rank');
-    v.innerHTML = `${topBar()}<div class="h1">Ranking</div><div class="sub">Los que no negocian. Ordenados por racha.</div><div class="card" style="margin-top:14px;padding:6px" id="lbx"><div class="sub" style="padding:14px;text-align:center"><span class="spin"></span></div></div>
-      <div class="card" style="margin-top:10px;display:flex;gap:12px;align-items:center"><div style="font-size:24px">📈</div><div class="sub" style="margin:0">Cada día que cumples sube tu racha. Si fallas dos seguidos, vuelves a cero y bajas en la tabla.</div></div>`;
+    const v = $('#v-rank'), me = window.Rank && Rank.me;
+    v.innerHTML = `${topBar()}<div class="h1">Ranking</div><div class="sub">Los que no negocian. Compite con tus amigos por racha y puntos.</div>
+      ${me ? '' : `<div class="card join"><b>${joinMode === 'up' ? 'Entra en el ranking' : 'Entra en tu cuenta'}</b><p>${joinMode === 'up' ? 'Crea tu cuenta con usuario y contraseña. En el ranking solo se ve tu @usuario, tu racha y tus puntos.' : 'Recupera tu progreso en este móvil.'}</p>
+        <input class="field l" id="ru" maxlength="20" autocapitalize="off" autocomplete="username" placeholder="@usuario" value="${esc(Rank.clean(S().username || S().name || ''))}" style="margin:0">
+        <input class="field l" id="rp" type="password" maxlength="72" autocomplete="${joinMode === 'up' ? 'new-password' : 'current-password'}" placeholder="Contraseña (mín. 6)" style="margin:8px 0 0">
+        <button class="btn red w" id="rj">${joinMode === 'up' ? 'Crear cuenta y competir' : 'Entrar'}</button><div class="err" id="rer"></div>
+        <button class="lnk2" id="rmode">${joinMode === 'up' ? '¿Ya tienes cuenta? Entra' : '¿No tienes cuenta? Créala'}</button></div>`}
+      <div class="seg" id="rseg"><button data-k="streak" class="${rankSort === 'streak' ? 'on' : ''}">🔥 Racha</button><button data-k="xp" class="${rankSort === 'xp' ? 'on' : ''}">⚡ Puntos</button></div>
+      <div class="card" style="margin-top:10px;padding:6px" id="lbx"><div class="sub" style="padding:14px;text-align:center"><span class="spin"></span></div></div>
+      ${me ? `<div class="sub" style="text-align:center;font-size:12px;margin-top:10px">Compites como <b>@${esc(me.username)}</b>. Comparte la app para que tus amigos entren.</div><button class="btn ghost w" id="rshare">Invitar a un amigo</button>` : ''}
+      <div class="card" style="margin-top:10px;display:flex;gap:12px;align-items:center"><div style="font-size:24px">📈</div><div class="sub" style="margin:0">Cada día ganado sube tu racha. Un día suelto se perdona; dos seguidos la reinician. Los puntos salen de misiones, retos, foco y el Espejo.</div></div>`;
     wireTop(v);
-    await Cloud.push();
-    let rows = await Cloud.leaderboard(), demo = false;
-    if (rows === null) { demo = true; const me = { username: S().username || 'tú', streak: streak(), xp: S().xp || 0 }; rows = [{ username: 'ejemplo_1', streak: 41, xp: 2380 }, { username: 'ejemplo_2', streak: 27, xp: 1610 }, { username: 'ejemplo_3', streak: 12, xp: 790 }, { username: 'ejemplo_4', streak: 5, xp: 260 }, me].sort((a, b) => b.streak - a.streak || b.xp - a.xp); }
-    const box = $('#lbx'); if (!box) return;
-    if (demo) box.insertAdjacentHTML('beforebegin', '<div class="sub" style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;margin-top:10px">VISTA PREVIA · LOS DEMÁS SON DE EJEMPLO HASTA ACTIVAR LAS CUENTAS</div>');
+    $$('#rseg button', v).forEach(b => b.onclick = () => { rankSort = b.dataset.k; H.tick(); renderRank(); });
+    const rj = $('#rj', v);
+    if (rj) {
+      const ru = $('#ru', v), rp = $('#rp', v), lab = rj.textContent;
+      ru.oninput = () => { const c = Rank.clean(ru.value); if (c !== ru.value) ru.value = c; };
+      $('#rmode', v).onclick = () => { joinMode = joinMode === 'up' ? 'in' : 'up'; H.tick(); renderRank(); };
+      const go2 = async () => { rj.disabled = true; rj.innerHTML = '<span class="spin"></span>'; const r = joinMode === 'up' ? await Rank.register(ru.value, rp.value) : await Rank.login(ru.value, rp.value); rj.disabled = false; rj.textContent = lab; if (r.error) { $('#rer', v).textContent = r.error; H.thud(); return; } H.success(); burst(40); toast(joinMode === 'up' ? 'Estás dentro' : 'Has entrado', joinMode === 'up' ? ' Ya compites en el ranking.' : ' Progreso recuperado.', '🏆'); if (joinMode === 'in') { start(); go('rank'); } else renderRank(); };
+      rj.onclick = go2; rp.onkeydown = e => { if (e.key === 'Enter') go2(); };
+    }
+    const sh = $('#rshare', v); if (sh) sh.onclick = async () => { const d = { title: 'HARDMODE', text: `Te reto en HARDMODE. Búscame en el ranking: @${me.username}`, url: location.origin + location.pathname }; try { if (navigator.share) await navigator.share(d); else { await navigator.clipboard.writeText(d.text + ' ' + d.url); toast('Enlace copiado', ' Pégalo en un chat.', '🔗'); } } catch (e) { } };
+    if (me) await Rank.push();
+    let rows = await Rank.top(100);
+    const box = $('#lbx'); if (!box || curTab !== 'rank') return;
+    if (rows === null) { box.innerHTML = '<div class="sub" style="padding:14px;text-align:center">No se ha podido cargar el ranking. Revisa la conexión.</div>'; return; }
+    rows = rows.slice().sort(rankSort === 'xp' ? (a, b) => b.xp - a.xp || b.streak - a.streak : (a, b) => b.streak - a.streak || b.xp - a.xp);
     if (!rows.length) { box.innerHTML = '<div class="sub" style="padding:14px;text-align:center">Aún no hay nadie. Sé el primero.</div>'; return; }
-    box.innerHTML = rows.map((r, k) => `<div class="lb${r.username === S().username ? ' me' : ''}"><span class="pos">${k + 1}</span><b>@${esc(r.username)}</b><span class="s">🔥 ${r.streak} · ⚡ ${r.xp}</span></div>`).join('');
+    const mine = me ? me.username : null;
+    box.innerHTML = rows.slice(0, 50).map((r, k) => `<div class="lb${r.username === mine ? ' me' : ''}"><span class="pos">${k < 3 ? ['🥇', '🥈', '🥉'][k] : k + 1}</span><b>@${esc(r.username)}</b><span class="s">🔥 ${r.streak} · ⚡ ${r.xp}</span></div>`).join('');
+    const pos = mine ? rows.findIndex(r => r.username === mine) : -1;
+    if (pos >= 50) box.insertAdjacentHTML('beforeend', `<div class="lb me"><span class="pos">${pos + 1}</span><b>@${esc(mine)}</b><span class="s">🔥 ${rows[pos].streak} · ⚡ ${rows[pos].xp}</span></div>`);
   }
 
   /* ---------- PERFIL ---------- */
@@ -406,6 +459,9 @@
       <div class="card"><div class="sub" style="margin:0">Firmado el ${S().signedAt ? new Date(S().signedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}.</div>${S().signature ? `<div class="sigshow"><img src="${S().signature}" alt="Tu firma"></div>` : ''}</div>
       <div class="sec"><span>Tu vida en semanas</span></div>
       <div class="card"><div class="sub" style="margin:0 0 6px">80 años. Las rojas ya se fueron. La blanca es esta.</div><canvas id="mm"></canvas><div class="sub" style="margin-top:8px;font-family:var(--mono);font-size:12px">${lived.toLocaleString('es-ES')} vividas · ${Math.max(0, 4174 - lived).toLocaleString('es-ES')} por delante</div></div>
+      <div class="sec"><span>Cuenta</span></div>
+      <div class="card">${Rank.me && Rank.me.acc ? `<b>@${esc(Rank.me.username)}</b><div class="sub" style="margin:4px 0 0">${Rank.me.stale ? '⚠️ Has entrado en otro móvil. Vuelve a entrar aquí para seguir guardando.' : 'Tu progreso se guarda en tu cuenta' + (Rank.me.saved ? ' · última copia ' + new Date(Rank.me.saved).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '') + '.'} Las fotos de entrenos se quedan en el móvil.</div><button class="btn ghost w" id="accout">Cerrar sesión en este móvil</button>` : `<div class="sub" style="margin:0">Sin cuenta: tu progreso solo está en este móvil. Crea una con usuario y contraseña para competir en el ranking y no perder nada.</div><button class="btn red w" id="accnew">Crear cuenta o entrar</button>`}
+        <div class="sub" style="font-size:12px;margin-top:10px">¿Problemas con tu cuenta? Escribe a <a href="mailto:${Rank.SUPPORT}" style="color:var(--ink)">${Rank.SUPPORT}</a></div></div>
       <div class="sec"><span>Recordatorios</span></div>
       <div class="card"><div class="rem" id="rem">${U.reminders().items.map(r => `<label class="rem-row"><input type="checkbox" data-id="${r.id}"${U.reminders().on && r.on ? ' checked' : ''}><span class="rem-t"><b>${r.label}</b><small>${r.what}</small></span><input type="time" data-t="${r.id}" value="${r.t}"></label>`).join('')}</div>
         <p class="src" style="margin-bottom:0">Llegan mientras HARDMODE está abierta o instalada. En iPhone, añádela a la pantalla de inicio. ${'Notification' in window ? (Notification.permission === 'granted' ? 'Notificaciones permitidas.' : 'Sin permiso de notificaciones: se muestran dentro de la app.') : 'Este navegador no admite notificaciones: se muestran dentro de la app.'}</p></div>
@@ -427,6 +483,8 @@
     };
     $$('#rem input', v).forEach(i => i.onchange = saveRem);
     $('#calm', v).onchange = e => { U.setCalm(e.target.checked); H.tick(); };
+    const an = $('#accnew', v); if (an) an.onclick = () => go('rank');
+    const ao = $('#accout', v); if (ao) ao.onclick = () => sheet(`<h3>¿Cerrar sesión?</h3><p class="p">Tu progreso sigue guardado en tu cuenta. En este móvil se borran tus datos y vuelves a empezar; para recuperarlos, entra con tu usuario y contraseña.</p><button class="cta" id="y" style="margin-top:16px">Cerrar sesión</button>`, sh => { $('#y', sh).onclick = async () => { await Rank.push(); Rank.leave(); try { localStorage.removeItem(U.KEY); } catch (e) { } location.reload(); }; });
     if ($('#out', v)) $('#out', v).onclick = () => sheet(`<h3>¿Cerrar sesión?</h3><p class="p">Tu progreso se queda guardado en tu cuenta.</p><button class="cta" id="y" style="margin-top:16px">Cerrar sesión</button>`, sh => { $('#y', sh).onclick = async () => { await Cloud.push(); Cloud.signOut(); }; });
   }
   function drawMM(lived) {
