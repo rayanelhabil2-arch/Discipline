@@ -68,11 +68,21 @@
 
   steps = [
     { id: 'logo', auto: true, run(s, go) {
-      const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); later(() => f.remove(), 600);
-      H.thud(); tone(90, .35, .08);
-      s.innerHTML = `<div class="logo" id="lg"></div><div class="brand">HARD<b>MODE</b></div><div class="brand-sub">Disciplina diaria</div>`;
-      Mascot.mount($('#lg', s), { size: 150, mood: 'angry' });
-      later(go, U.calm() ? 1200 : 2500);
+      // TANK duerme en la oscuridad. Al tocar (o a los pocos segundos) despierta rugiendo.
+      s.classList.add('intro');
+      s.innerHTML = `<div class="logo sleep" id="lg"></div><div class="brand">HARD<b>MODE</b></div><div class="brand-sub">Disciplina diaria</div><div class="wake" id="wk">Toca para despertar a TANK</div>`;
+      const m = Mascot.mount($('#lg', s), { size: 180, mood: 'sleepy' });
+      let woke = false;
+      const wake = () => {
+        if (woke || !s.isConnected) return; woke = true;
+        if (window.FX) FX.unlock();
+        $('#lg', s).classList.remove('sleep'); s.classList.add('awake');
+        later(() => { const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); later(() => f.remove(), 600); H.thud(); }, 200);
+        m.roar({ big: true, keep: true });
+        later(go, U.calm() ? 1400 : 2900);
+      };
+      s.addEventListener('pointerdown', wake);
+      later(wake, U.calm() ? 1500 : 5500);
     } },
     typeScreen('t1', ['La motivación se va.', 'La disciplina se queda.']),
     typeScreen('t2', ['Cada día eliges: lo que quieres ahora o lo que quieres de verdad.', 'Disciplina es elegir bien cuando no apetece.']),

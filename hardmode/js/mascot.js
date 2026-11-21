@@ -168,6 +168,17 @@
       hush() { bubble.classList.remove('on'); return api; },
       jump() { el.classList.remove('jump'); void el.offsetWidth; el.classList.add('jump'); return api; },
       shake() { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); return api; },
+      // Rugido: retrocede, embiste, ondas de choque, brillo rojo, sonido y vibración
+      roar(o) {
+        o = o || {}; if (el.classList.contains('roar')) return api;
+        const before = mood; if (mood !== 'angry') { mood = 'angry'; render(); }
+        el.classList.remove('jump', 'shake'); el.classList.add('roar'); if (o.big) el.classList.add('big');
+        ['w1', 'w2', 'w3'].slice(0, o.big ? 3 : 2).forEach((w, i) => { const r = document.createElement('i'); r.className = 'm-wave ' + w; r.style.animationDelay = (0.22 + i * 0.14) + 's'; el.appendChild(r); setTimeout(() => r.remove(), 1700); });
+        if (window.FX) { FX.roar({ big: o.big }); if (o.big) setTimeout(() => FX.quake(), 230); }
+        try { navigator.vibrate && navigator.vibrate(o.big ? [30, 40, 120, 30, 60] : [20, 30, 50]); } catch (e) { }
+        setTimeout(() => { el.classList.remove('roar', 'big'); if (o.keep !== true && before !== mood) { mood = before; render(); } }, o.big ? 1500 : 1000);
+        return api;
+      },
       destroy() { alive = false; window.removeEventListener('pointermove', look); window.removeEventListener('touchstart', look); }
     };
     el.addEventListener('click', () => { if (opts.onTap) opts.onTap(api); });

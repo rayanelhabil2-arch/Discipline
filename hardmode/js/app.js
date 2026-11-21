@@ -142,7 +142,7 @@
       ${ad('hoy')}
       <button class="card" id="toMirror" style="width:100%;text-align:left;margin-top:14px;display:flex;align-items:center;gap:12px"><div style="font-size:26px">🪞</div><div style="flex:1"><b style="font-family:var(--disp);font-size:20px;font-weight:400;text-transform:uppercase">${hour() >= 19 ? 'Hora del espejo' : 'El espejo'}</b><div class="sub" style="margin:2px 0 0">${(S().reviews[today()] || {}).done ? '✓ Hecho hoy' : 'Di la verdad antes de dormir · +20 ⚡'}</div></div><span style="color:var(--red);font-family:var(--disp);font-size:24px">›</span></button>`;
     wireTop(v);
-    tank = Mascot.mount($('#hm', v), { size: 132, mood: moodNow(), onTap: m => { H.tick(); tone(200, .08); m.jump().say(pick(D.TANK.tap)); } });
+    tank = Mascot.mount($('#hm', v), { size: 132, mood: moodNow(), onTap: m => { H.tick(); m.roar().say(pick(D.TANK.tap)); } });
     later(() => tank.say(tankLine(), 3600), 700);
     count($('#sst', v), st, { dur: 800 });
     drawHabits(); updProg(true); drawPrio(); drawWeek();
@@ -474,7 +474,7 @@
       </div>
       <p class="sub" style="text-align:center;margin-top:20px;font-family:var(--mono);font-size:11px">HARDMODE · prototipo${Cloud.MOCK ? ' · modo local' : ''}</p>`;
     wireTop(v);
-    Mascot.mount($('#tm', v), { size: 84, mood: st >= 7 ? 'cool' : 'calm', onTap: m => m.jump().say(pick(D.TANK.tap)) });
+    Mascot.mount($('#tm', v), { size: 84, mood: st >= 7 ? 'cool' : 'calm', onTap: m => m.roar().say(pick(D.TANK.tap)) });
     drawMM(lived);
     const saveRem = async () => {
       const R = U.reminders(), was = R.on; R.items.forEach(r => { r.on = $(`[data-id="${r.id}"]`, v).checked; r.t = $(`[data-t="${r.id}"]`, v).value || r.t; });
