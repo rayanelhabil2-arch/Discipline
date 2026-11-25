@@ -52,5 +52,11 @@ window.HM_CONFIG = {
 
   /* ---------- ANUNCIOS (solo plan gratis) ----------
      enabled: true + client de AdSense + id de cada bloque. house: patrocinador directo. */
-  ADS: { enabled: false, client: '', slots: { hoy: '', guerra: '', foco: '' }, house: null }
+  ADS: { enabled: false, client: '', slots: { hoy: '', guerra: '', foco: '' }, house: null },
+  // Adsterra (solo plan gratis, solo dentro de la app, nunca en la intro). Códigos tal cual los da Adsterra.
+  ADSTERRA: {
+    enabled: true,
+    native: { id: 'container-d8930038e6019cb76f952e72e5696173', src: 'https://bicea.org/21/d8930038e6019cb76f952e72e5696173', slots: ['hoy', 'guerra'] },
+    social: 'https://bicea.org/14/ac0f1af8b9ee4722325d9b1a3beae862'
+  }
 };

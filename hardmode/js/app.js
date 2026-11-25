@@ -27,8 +27,35 @@
   const failedYesterday = () => { const y = addDays(today(), -1); return y >= (S().created || today()) && !dayOk(y); };
 
   /* ---------- Anuncios (solo gratis) ---------- */
+  const AX = C.ADSTERRA || {};
+  const axOn = () => !!AX.enabled && !isPro();
+  // Native Banner de Adsterra: un único contenedor que se mueve a la pestaña abierta (Hoy o Arsenal)
+  let axNode = null, axSocial = false;
+  function axScript(src, opts) {
+    const s = document.createElement('script'); s.src = src; s.setAttribute('data-cfasync', 'false');
+    if (opts && opts.async) { s.async = true; s.setAttribute('fetchpriority', 'high'); }
+    return s;
+  }
+  function placeAds() {
+    if (!axOn()) { if (axNode) axNode.remove(); axNode = null; return; }
+    if (AX.social && !axSocial) { axSocial = true; document.body.appendChild(axScript(AX.social)); }
+    const n = AX.native; if (!n) return;
+    const anchor = $('.view.on .ax-anchor');
+    if (!axNode) {
+      axNode = document.createElement('div'); axNode.className = 'ad ax';
+      axNode.innerHTML = '<div class="tag">Publicidad</div>';
+      const c = document.createElement('div'); c.id = n.id; axNode.appendChild(c);
+      const node = axNode; new MutationObserver(() => node.classList.toggle('filled', c.childElementCount > 0)).observe(c, { childList: true, subtree: true });
+      (anchor || document.body).appendChild(axNode);
+      axNode.insertBefore(axScript(n.src, { async: true }), c);
+      if (!anchor) axNode.style.display = 'none';
+    } else if (anchor) { axNode.style.display = ''; anchor.appendChild(axNode); }
+  }
+  function parkAds() { if (axNode && axNode.isConnected && axNode.parentNode !== document.body) { axNode.style.display = 'none'; document.body.appendChild(axNode); } }
+
   function ad(slot) {
     if (isPro()) return '';
+    if (axOn() && AX.native) return (AX.native.slots || []).includes(slot) ? '<div class="ax-anchor"></div>' : '';
     const A = C.ADS || {};
     if (A.enabled && A.client && A.slots && A.slots[slot]) return `<div class="ad" style="display:block;border-style:solid"><div class="tag">Publicidad</div><ins class="adsbygoogle" style="display:block" data-ad-client="${esc(A.client)}" data-ad-slot="${esc(A.slots[slot])}" data-ad-format="auto" data-full-width-responsive="true"></ins></div>`;
     if (A.house) return `<a class="ad" href="${esc(A.house.url)}" target="_blank" rel="noopener sponsored" style="color:inherit;text-decoration:none"><div class="ph"></div><div><div class="tag">Patrocinado</div><b>${esc(A.house.title)}</b><small>${esc(A.house.text)}</small></div></a>`;
@@ -83,11 +110,12 @@
     curTab = t;
     const navT = SUBS.includes(t) ? 'mas' : t;
     $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === navT));
+    parkAds();
     $$('.view').forEach(v => { const on = v.id === 'v-' + t; v.classList.toggle('on', on); if (!on) v.innerHTML = ''; });
     ({ hoy: renderHoy, espejo: renderEspejo, foco: renderFoco, diario: () => Diario.render($('#v-diario'), { topBar, wireTop, xp }), arsenal: renderArsenal, rank: renderRank, tu: renderTu, mas: () => Mas.renderMenu($('#v-mas'), mctx), metas: () => Mas.renderMetas($('#v-metas'), mctx), estudios: () => Mas.renderEstudios($('#v-estudios'), mctx) })[t]();
     if (['espejo', 'arsenal', 'tu'].includes(t)) { const tp = $('#v-' + t + ' .top'); if (tp && !$('#v-' + t + ' .back-mas')) { tp.insertAdjacentHTML('afterend', '<button class="back-mas">‹ Menú</button>'); $('#v-' + t + ' .back-mas').onclick = () => { H.tick(); go('mas'); }; } }
     $('#main').scrollTop = 0;
-    pushAds();
+    pushAds(); placeAds();
   }
   const refresh = () => go(curTab);
   const mctx = { get topBar() { return topBar; }, get wireTop() { return wireTop; }, get xp() { return xp; }, go: t => go(t) };
