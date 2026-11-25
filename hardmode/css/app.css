@@ -645,3 +645,11 @@ html.calm #bg i,html.calm #grain{animation:none!important}
 .ad.ax:not(.filled){height:0;padding:0;margin:0;border:0}
 .ad.ax [id^="container-"]{max-width:100%;overflow:hidden}
 .ad.ax img{max-width:100%;height:auto}
+
+/* Aviso de cookies (encima de la barra de navegación) */
+.cookie{position:fixed;left:50%;bottom:calc(var(--sb) + 86px);transform:translate(-50%,20px);width:calc(100% - 20px);max-width:460px;z-index:30;background:#121212;border:1px solid var(--line2);border-left:3px solid var(--red);border-radius:10px;padding:14px 14px 12px;box-shadow:0 20px 40px rgba(0,0,0,.7);opacity:0;transition:opacity .35s,transform .35s var(--ease)}
+.cookie.on{opacity:1;transform:translate(-50%,0)}
+.cookie b{font-family:var(--disp);font-weight:400;font-size:18px;text-transform:uppercase;letter-spacing:.02em}
+.cookie p{margin:6px 0 10px;font-size:13.5px;line-height:1.45;color:var(--mut)}
+.cookie a{color:var(--ink)}
+.cookie-b{display:flex;gap:8px}.cookie-b .btn{flex:1}

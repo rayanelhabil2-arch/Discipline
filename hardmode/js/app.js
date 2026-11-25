@@ -28,7 +28,20 @@
 
   /* ---------- Anuncios (solo gratis) ---------- */
   const AX = C.ADSTERRA || {};
-  const axOn = () => !!AX.enabled && !isPro();
+  // Consentimiento de cookies: los anuncios solo se cargan si la persona acepta
+  const CK = 'hm.consent';
+  const consent = () => { try { return localStorage.getItem(CK) || ''; } catch (e) { return ''; } };
+  const setConsent = v => { try { localStorage.setItem(CK, v); } catch (e) { } };
+  const axOn = () => !!AX.enabled && !isPro() && consent() === 'yes';
+  function consentBar() {
+    if (!AX.enabled || isPro() || consent() || $('#ck')) return;
+    const el = document.createElement('div'); el.id = 'ck'; el.className = 'cookie'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Cookies y anuncios');
+    el.innerHTML = `<b>Cookies y anuncios</b><p>HARDMODE gratis se paga con anuncios de Adsterra, que usan cookies y datos técnicos de tu dispositivo. ¿Los aceptas? Puedes cambiarlo cuando quieras en Perfil. <a href="legal.html#privacidad" target="_blank" rel="noopener">Más info</a></p><div class="cookie-b"><button class="btn ghost" id="ckno">Rechazar</button><button class="btn red" id="ckyes">Aceptar</button></div>`;
+    document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on'));
+    const done = v => { setConsent(v); H.tick(); el.classList.remove('on'); setTimeout(() => el.remove(), 400); if (v === 'yes') placeAds(); };
+    $('#ckyes', el).onclick = () => done('yes');
+    $('#ckno', el).onclick = () => done('no');
+  }
   // Native Banner de Adsterra: un único contenedor que se mueve a la pestaña abierta (Hoy o Arsenal)
   let axNode = null, axSocial = false;
   function axScript(src, opts) {
@@ -37,7 +50,7 @@
     return s;
   }
   function placeAds() {
-    if (!axOn()) { if (axNode) axNode.remove(); axNode = null; return; }
+    if (!axOn()) { if (axNode) axNode.remove(); axNode = null; consentBar(); return; }
     if (AX.social && !axSocial) { axSocial = true; document.body.appendChild(axScript(AX.social)); }
     const n = AX.native; if (!n) return;
     const anchor = $('.view.on .ax-anchor');
@@ -55,7 +68,7 @@
 
   function ad(slot) {
     if (isPro()) return '';
-    if (axOn() && AX.native) return (AX.native.slots || []).includes(slot) ? '<div class="ax-anchor"></div>' : '';
+    if (AX.enabled && AX.native) return (AX.native.slots || []).includes(slot) ? '<div class="ax-anchor"></div>' : '';
     const A = C.ADS || {};
     if (A.enabled && A.client && A.slots && A.slots[slot]) return `<div class="ad" style="display:block;border-style:solid"><div class="tag">Publicidad</div><ins class="adsbygoogle" style="display:block" data-ad-client="${esc(A.client)}" data-ad-slot="${esc(A.slots[slot])}" data-ad-format="auto" data-full-width-responsive="true"></ins></div>`;
     if (A.house) return `<a class="ad" href="${esc(A.house.url)}" target="_blank" rel="noopener sponsored" style="color:inherit;text-decoration:none"><div class="ph"></div><div><div class="tag">Patrocinado</div><b>${esc(A.house.title)}</b><small>${esc(A.house.text)}</small></div></a>`;
@@ -497,6 +510,7 @@
       <div class="card">
         <label class="rem-row"><input type="checkbox" id="calm"${U.calm() ? ' checked' : ''}><span class="rem-t"><b>Reducir movimiento</b><small>Sin animaciones, sacudidas ni texto que se escribe solo</small></span></label>
         <div class="sub" style="margin:10px 0 4px">${Cloud.AUTH ? esc(S().email || (Cloud.user && Cloud.user.email) || '') : 'Prototipo sin cuenta: tus datos se guardan solo en este dispositivo.'}</div>
+        ${AX.enabled && !isPro() ? `<label class="rem-row"><input type="checkbox" id="ckads"${consent() === 'yes' ? ' checked' : ''}><span class="rem-t"><b>Anuncios con cookies</b><small>Aceptar los anuncios de Adsterra. Si lo quitas, no se carga ninguno.</small></span></label>` : ''}
         <a class="btn ghost w" href="legal.html" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Privacidad y condiciones</a>
         ${Cloud.AUTH ? '<button class="btn ghost w" id="out">Cerrar sesión</button>' : ''}
       </div>
@@ -510,6 +524,7 @@
       if (R.on && !was) { await U.askNotify(); toast('Recordatorios guardados', ' Te aviso a la hora elegida.', '⏰'); }
     };
     $$('#rem input', v).forEach(i => i.onchange = saveRem);
+    const ck = $('#ckads', v); if (ck) ck.onchange = () => { const was = consent(); setConsent(ck.checked ? 'yes' : 'no'); H.tick(); if (ck.checked) { placeAds(); toast('Anuncios aceptados', 'Gracias por apoyar HARDMODE.', '✓'); } else if (was === 'yes') location.reload(); };
     $('#calm', v).onchange = e => { U.setCalm(e.target.checked); H.tick(); };
     const an = $('#accnew', v); if (an) an.onclick = () => go('rank');
     const ao = $('#accout', v); if (ao) ao.onclick = () => sheet(`<h3>¿Cerrar sesión?</h3><p class="p">Tu progreso sigue guardado en tu cuenta. En este móvil se borran tus datos y vuelves a empezar; para recuperarlos, entra con tu usuario y contraseña.</p><button class="cta" id="y" style="margin-top:16px">Cerrar sesión</button>`, sh => { $('#y', sh).onclick = async () => { await Rank.push(); Rank.leave(); try { localStorage.removeItem(U.KEY); } catch (e) { } location.reload(); }; });
